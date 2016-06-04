@@ -160,8 +160,7 @@ char *ident_to_cdata(char *s, char *cdata);
 %type <crepr> while_stmt for_stmt if_stmt 
               goto_stmt label_stmt ret_stmt
               
-/* individual statement blocks for function */     
-
+/* individual statement blocks for function */
 %type <crepr> result_stmt func_while_stmt func_for_stmt func_if_stmt 
               func_label_stmt func_ret_stmt ret_val         
               
@@ -174,12 +173,16 @@ char *ident_to_cdata(char *s, char *cdata);
 /* arguments */
 %type <crepr> arguments arglist func_arguments func_arglist type_only_arguments
 
+/* including modules */
 %type <crepr> incl_mod incl_mods 
 
+/* header and body */
 %type <crepr> program_decl body
 
+/* proc calls */
 %type <crepr> proc_call func_proc_call
 
+/* expressions */
 %type <crepr> basic_exp exp_join func_exp_join
 
 
