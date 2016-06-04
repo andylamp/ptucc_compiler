@@ -1,0 +1,48 @@
+(*  Passing around functions  *)
+
+program function_fun;
+
+type
+   intfunc = function(n: integer) : integer;
+   string = array of char;
+
+function fibonacci(n:integer) : integer;
+var
+	f0, f1, temp: integer;
+begin
+	f0:=0;
+	f1:=1;
+	while n>1 do
+		begin
+			temp := f1;
+			f1 := f1+f0;
+			f0 := temp;
+			n := n-1
+		end;
+	result := f1
+end;
+
+function factorial(n:integer) : integer;
+var
+	fac, i: integer;
+begin
+	fac := 1; 
+	for i:=n downto 1 do 
+	  fac:=i*fac;
+	result := fac;
+	return
+end;
+
+procedure eval(prompt: string; f: intfunc; val: integer);
+begin
+	writeString(prompt); 
+	writeString('('); writeInteger(val); writeString(')=');
+	writeInteger(f(val));
+	writeString('\n')
+end;
+
+begin
+	eval('Fibonacci', fibonacci, 5);
+	eval('factorial', factorial, 5)
+end.
+

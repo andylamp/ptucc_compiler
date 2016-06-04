@@ -1,0 +1,11 @@
+(*
+	prec. test.
+*)
+program test;
+var x,y: boolean;
+begin
+  x := true;
+  y := false;
+  x := y and (!(integer)!x);
+	writeString('\n')
+end.

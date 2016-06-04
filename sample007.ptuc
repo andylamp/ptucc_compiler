@@ -1,0 +1,23 @@
+program foo ;
+
+	type
+		string = array of char;
+	var
+		x : string;
+	
+
+
+	function foo() : integer;
+	begin
+	result := 1
+	end;
+	
+begin
+
+	x := 'Hello world\n';
+	writeString(x)
+	
+
+end.
+
+

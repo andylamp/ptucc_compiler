@@ -1,0 +1,51 @@
+
+
+program calculate;
+
+    var limit, number, counter: integer;
+
+    function prime(n: integer): boolean;
+
+        var i: integer; isPrime: boolean;
+
+    begin
+
+        if n < 0 then
+            result := prime(-n)
+        else if n < 2 then
+            result := false
+        else if n = 2 then
+            result := true
+        else if n mod 2 = 0 then
+            result := false
+        else begin
+            i := 3;
+            isPrime := true;
+            while isPrime and i > 0 and (i < n div 2) do begin
+                isPrime := n mod i <> 0;
+                i := i+2
+            end;
+            result := isPrime
+        end;
+        return
+
+    end;
+
+begin
+
+    limit := readInteger();
+    counter := 0;
+    number := 2;
+    while number <= limit do begin
+        if prime(number) then begin
+            counter := counter + 1;
+            writeInteger(number);
+            writeString(" ")
+        end;
+        number := number + 1
+    end;
+    writeString("\n");
+    writeInteger(counter);
+    writeString("\n")
+
+end.

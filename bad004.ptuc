@@ -1,0 +1,13 @@
+program foo ;
+
+	function foo() : integer;
+	begin
+	(* extra semicolon *)
+	result := 1;
+	end;
+	
+begin
+
+end.
+
+

@@ -1,0 +1,51 @@
+# Created by .ignore support plugin (hsz.mobi)
+### C template
+# Object files
+*.o
+*.ko
+*.obj
+*.elf
+
+# Precompiled Headers
+*.gch
+*.pch
+
+# Libraries
+*.lib
+*.a
+*.la
+*.lo
+
+# Shared objects (inc. Windows DLLs)
+*.dll
+*.so
+*.so.*
+*.dylib
+
+# touch depend
+.depend
+
+# Executables
+*.exe
+*.out
+*.app
+*.i*86
+*.x86_64
+*.hex
+
+.idea/*
+
+# Debug files
+*.dSYM/
+*.su
+
+### Executables
+ptucc
+ptucc_scan
+
+### flex gen
+ptucc_lex.c
+
+### bison gen
+ptucc_parser.tab.*
+*.debug

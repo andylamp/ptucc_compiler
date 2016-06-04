@@ -1,0 +1,11 @@
+program bad;
+
+
+begin
+
+   writeString('Hello world');
+
+   (*  an extra ; at the end *)
+   writeString('\n'); 
+
+end.
