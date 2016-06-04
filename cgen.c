@@ -85,7 +85,7 @@ string_ptuc2c(char *P) {
 
 
 /*
-	Report errors 
+    Report errors
 */
 void
 yyerror(char const *pat, ...) {
