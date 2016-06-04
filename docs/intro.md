@@ -65,7 +65,7 @@ This guide is a *demonstration* of common techniques and practices on how to cre
 *parsers* and combining them. I use extensive insight gained from the manuals of the tools used (as one should)
 and I suggest you refer to them often in case of doubt.
 
-[1]: docs/ptuc_spec.md
-[2]: docs/ptuc_start.md
-[3]: docs/ptuc_lexer.md
-[4]: docs/ptuc_parser.md
+[1]: ptuc_spec.md
+[2]: ptuc_start.md
+[3]: ptuc_lexer.md
+[4]: ptuc_parser.md
