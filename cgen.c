@@ -25,42 +25,47 @@ const char *c_prologue =
                 "\n";
 
 void
-ssopen(sstream *S) { S->stream = open_memstream(&S->buffer, &S->bufsize); }
+ssopen(sstream *S)
+    {S->stream = open_memstream(&S->buffer, &S->bufsize);}
 
 void
-ssflush(sstream *S) { fflush(S->stream); }
+ssflush(sstream *S)
+    {fflush(S->stream);}
 
 void
-ssclose(sstream *S) { fclose(S->stream); }
+ssclose(sstream *S)
+    {fclose(S->stream);}
 
-/* wraper for cleaning flex and hashtable */
+/* wrapper for cleaning flex and hashtable */
 void
-flex_closure() {
-    yylex_destroy();
-    ht_destroy(mac_ht);
-}
+flex_closure()
+    {yylex_destroy(); ht_destroy(mac_ht);}
 
-char*
-template(
-const char *pat, ...
-)
-{
-sstream S = {0};
-ssopen(&S);
-va_list arg;
-va_start(arg, pat);
-vfprintf(S
-.stream, pat, arg);
-va_end(arg);
+/*
+    This function takes the same arguments as printf,
+    but returns a new string with the output value in it.
+ */
+char *
+template(const char *pat, ...) {
+    sstream S = {0};
+    ssopen(&S);
 
-ssflush(&S);
-ssclose(&S);
-return S.
-buffer;
+    va_list arg;
+    va_start(arg, pat);
+    vfprintf(S.stream, pat, arg);
+    va_end(arg);
+
+    ssflush(&S);
+    ssclose(&S);
+    return S.buffer;
 }
 
 /* Helper functions */
 
+/*
+    Make a C string literal out of a PTUC string literal.
+    Return the corrected string (maybe the same as P).
+*/
 char *
 string_ptuc2c(char *P) {
     if (P == NULL) { return P; }
