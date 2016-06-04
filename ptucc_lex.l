@@ -142,8 +142,8 @@ STR_LIT   \"(\\[ntr\'\"\\]|[^\'\\"])*\"
 };
 
 program     {pwrap("PROGRAM"); return KW_PROGRAM;}
-begin 			{pwrap("BEGIN"); return KW_BEGIN;}
-end					{pwrap("END"); return KW_END;}
+begin 		{pwrap("BEGIN"); return KW_BEGIN;}
+end			{pwrap("END"); return KW_END;}
 and         {pwrap("AND"); return KW_AND;}
 array       {pwrap("ARRAY"); return KW_ARRAY;}
 boolean     {pwrap("BOOLEAN"); return KW_BOOLEAN;}
@@ -177,7 +177,7 @@ false       {pwrap("B_FALSE"); return KW_BOOL_FALSE;}
 
   /* module support */
 module      {pwrap("MODULE"); return KW_MODULE;}
-use         {BEGIN(incl_module);}
+use         {pwrap("USE"); BEGIN(incl_module);}
   
   /* handle module includes */
 <incl_module>[ \t]*       {/* eat whitespaces */}
@@ -210,19 +210,19 @@ use         {BEGIN(incl_module);}
 	  {unput(def[i-1]);}
 }
  						
-{SNUMBER}				{
+{SNUMBER}		{
                   pwrap("SNUMBER"); 
                   yylval.crepr = strdup(yytext); 
                   return POSINT; 
                 }
 
-{REAL}					{
+{REAL}			{
                   pwrap("REAL_NUM");
                   yylval.crepr = strdup(yytext); 
                   return REAL; 
                 }
 
-{STRING}				{
+{STRING}		{
                   pwrap("STRING"); 
                   yylval.crepr = strdup(yytext); 
                   return STRING; 
@@ -235,47 +235,47 @@ use         {BEGIN(incl_module);}
                 }
 
   /* arithmetic operators */
-"+"						{pwrap("OP_PLUS"); return KW_OP_PLUS;}
-"-"           {pwrap("OP_MINUS"); return KW_OP_MINUS;}
-"*"						{pwrap("OP_MUL"); return KW_OP_MUL;}
-"/"           {pwrap("OP_DIV"); return KW_OP_DIV;}
+"+"	        {pwrap("OP_PLUS"); return KW_OP_PLUS;}
+"-"         {pwrap("OP_MINUS"); return KW_OP_MINUS;}
+"*"			{pwrap("OP_MUL"); return KW_OP_MUL;}
+"/"         {pwrap("OP_DIV"); return KW_OP_DIV;}
 
   /* relational operators */
-"="           {pwrap("OP_EQ"); return KW_EQ;}
-"<>"          {pwrap("OP_DIFF"); return KW_DIFF;}
-"<="          {pwrap("OP_LESS_EQ"); return KW_LESS_EQ;}
-"<"           {pwrap("OP_LESS"); return KW_LESS;}
-">="          {pwrap("OP_GREATER_EQ"); return KW_GREATER_EQ;}
-">"           {pwrap("OP_GREATER"); return KW_GREATER;}
+"="         {pwrap("OP_EQ"); return KW_EQ;}
+"<>"        {pwrap("OP_DIFF"); return KW_DIFF;}
+"<="        {pwrap("OP_LESS_EQ"); return KW_LESS_EQ;}
+"<"         {pwrap("OP_LESS"); return KW_LESS;}
+">="        {pwrap("OP_GREATER_EQ"); return KW_GREATER_EQ;}
+">"         {pwrap("OP_GREATER"); return KW_GREATER;}
 
   /* logic operators (v2) */
-"&&"          {pwrap("OP_AND"); return KW_OP_AND;}
-"||"          {pwrap("OP_OR"); return KW_OP_OR;}
-"!"           {pwrap("OP_NOT"); return KW_OP_NOT;}
+"&&"        {pwrap("OP_AND"); return KW_OP_AND;}
+"||"        {pwrap("OP_OR"); return KW_OP_OR;}
+"!"         {pwrap("OP_NOT"); return KW_OP_NOT;}
 
   /* assignment operators */
-":="          {pwrap("OP_ASSIGN"); return KW_OP_ASSIGN;}
+":="        {pwrap("OP_ASSIGN"); return KW_OP_ASSIGN;}
 
   /* (remaining) delimiters */
-";"						{pwrap("DEL_SEMICOLON"); return KW_SEMICOLON;}
-","           {pwrap("DEL_COMMA"); return KW_COMMA;}
-"."						{pwrap("DEL_DOT"); return KW_DOT;}
-"("						{pwrap("DEL_LPAR"); return KW_LPAR;}
-")"						{pwrap("DEL_RPAR"); return KW_RPAR;}
-"["           {pwrap("DEL_LBRA"); return KW_LBRA;}
-"]"           {pwrap("DEL_RBRA"); return KW_RBRA;}
-":"           {pwrap("DEL_COLON"); return KW_COLON;}
+";"			{pwrap("DEL_SEMICOLON"); return KW_SEMICOLON;}
+","         {pwrap("DEL_COMMA"); return KW_COMMA;}
+"."			{pwrap("DEL_DOT"); return KW_DOT;}
+"("			{pwrap("DEL_LPAR"); return KW_LPAR;}
+")"			{pwrap("DEL_RPAR"); return KW_RPAR;}
+"["         {pwrap("DEL_LBRA"); return KW_LBRA;}
+"]"         {pwrap("DEL_RBRA"); return KW_RBRA;}
+":"         {pwrap("DEL_COLON"); return KW_COLON;}
 
   /* handle single-line comments */
-"//"          BEGIN(sl_comment);
+"//"                    {BEGIN(sl_comment);}
 <sl_comment>[^\n]      /* eat up anything up to newline */
-<sl_comment>\n        {
-                        increment_line_count();//++line_num;     // increment line
-                        BEGIN(INITIAL); // go back
-                      }
+<sl_comment>\n      {
+                        increment_line_count(); // increment line
+                        BEGIN(INITIAL);         // go back
+                    }
                       
   /* handle multi-line comments */
-"(*"					BEGIN(comment);
+"(*"					{BEGIN(comment);}
 <comment>[^*\n]*        /* eat anything that's not a '*' */
 <comment>"*"+[^*)\n]*   /* eat up '*'s not followed by ')'s */
 <comment>\n             {increment_line_count();}
@@ -284,20 +284,20 @@ use         {BEGIN(incl_module);}
 
 [ \r\t]				/* skip whitespace */
 \n 						{increment_line_count();}//++line_num;
-<<EOF>> 			{
-                  /* pop one of the stacked buffers, if any */
-                  if(!pop_delete_buffer()) {
-                    if(yybuf_states)
-                      {free(yybuf_states);}
-                    flex_closure(); 
-                    return EOF;
-                  }
-              }
+<<EOF>>         {
+                    /* pop one of the stacked buffers, if any */
+                    if(!pop_delete_buffer()) {
+                        if(yybuf_states)
+                            {free(yybuf_states);}
+                        flex_closure();
+                        return EOF;
+                    }
+                }
 
-.       { 
-          /* makes again, valgrind happy -- even in failures */ 
-          yyerror("lexical error: unrecognized literal '%s'\n", yytext);             
-        }
+.   {
+        /* makes again, valgrind happy -- even in failures */
+        yyerror("lexical error: unrecognized literal '%s'\n", yytext);
+    }
 
 
 %%

@@ -200,7 +200,7 @@ char *ident_to_cdata(char *s, char *cdata);
   <crepr>
   
 /* 
-  Assosiativity Rules. 
+  Associativity Rules.
 
   A couple of notes are that as per
   specification we have 8 precedence
