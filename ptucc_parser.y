@@ -147,7 +147,7 @@ ident_to_cdata(char *s, char *cdata) {
 
 %union
 {
-	char* crepr;
+    char* crepr;
 }
 
 /* for a more detailed error desc. */
