@@ -118,27 +118,27 @@ STR_LIT   \"(\\[ntr\'\"\\]|[^\'\\"])*\"
 
 @defmacro[ \r\t]+       {pwrap("DECL_MACRO"); BEGIN(macro);}
 <macro>{ID} {
-  /* Store macro name */
-	char *mac_name = strdup(yytext);
-	char *def_buf = NULL;
-	size_t deflen = 0;
-	char c;
+    /* Store macro name */
+    char *mac_name = strdup(yytext);
+    char *def_buf = NULL;
+    size_t deflen = 0;
+    char c;
 
-	FILE *deff = open_memstream(&def_buf, &deflen);
+    FILE *deff = open_memstream(&def_buf, &deflen);
 
-	while((c = input())!='\n') {fputc(c, deff);}
+    while((c = input())!='\n') {fputc(c, deff);}
 	
-	fclose(deff);
-  /* perform some error checking */
-	if(!set_macro(mac_name, def_buf)){
-	  yyerror("lexer error: failed to define macro '%s'\n", mac_name);
-	  if(mac_name) {free(mac_name);}
-	  if(deflen > 0) {free(def_buf);}
-	}
-	/* increment line numbers */
-	increment_line_count();
-	/* continue tokenization */
-	BEGIN(INITIAL);
+    fclose(deff);
+    /* perform some error checking */
+    if(!set_macro(mac_name, def_buf)){
+        yyerror("lexer error: failed to define macro '%s'\n", mac_name);
+        if(mac_name) {free(mac_name);}
+        if(deflen > 0) {free(def_buf);}
+    }
+    /* increment line numbers */
+    increment_line_count();
+    /* continue tokenization */
+    BEGIN(INITIAL);
 };
 
 program     {pwrap("PROGRAM"); return KW_PROGRAM;}
