@@ -85,6 +85,8 @@ Again as with `tokens`, you can also group for convenience `types` that have the
 %type <tagB> TYPE_NAME_B TYPE_NAME_C TYPE_NAME_F
 ```
 
+The `tags` are again defined inside the union as are the tokens -- basically the same rules apply here as well.
+
 # Precedence rules
 
 # Destructors
