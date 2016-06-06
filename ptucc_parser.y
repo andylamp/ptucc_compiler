@@ -243,7 +243,7 @@ char *ident_to_cdata(char *s, char *cdata);
 %%
 
 program:  
-  incl_mods program_decl decls body  KW_DOT   		  
+  incl_mods program_decl decls body KW_DOT   		  
   {
     if(yyerror_count == 0) 
       {pheader($2); fudger($1, $3, $4); pbody();}

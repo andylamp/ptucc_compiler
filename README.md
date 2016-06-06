@@ -156,7 +156,7 @@ can make something like this on your own ([intro][1], [starting stub][2], [flex 
 [bison part][4]). Additionally this version has some *salts* which add more functionality,
 so FYI that's quite the giveaway. Hopefully this might encourage you to learn something new
 (and useful?) -- I sure hope that's the case, as this code polishing and write-up took a
-good two weeks++ of my spare time :).
+good three weeks++ of my spare time :).
 
 [1]: docs/intro.md
 [2]: docs/ptuc_start.md
