@@ -142,8 +142,8 @@ STR_LIT   \"(\\[ntr\'\"\\]|[^\'\\"])*\"
 };
 
 program     {pwrap("PROGRAM"); return KW_PROGRAM;}
-begin 		{pwrap("BEGIN"); return KW_BEGIN;}
-end			{pwrap("END"); return KW_END;}
+begin       {pwrap("BEGIN"); return KW_BEGIN;}
+end         {pwrap("END"); return KW_END;}
 and         {pwrap("AND"); return KW_AND;}
 array       {pwrap("ARRAY"); return KW_ARRAY;}
 boolean     {pwrap("BOOLEAN"); return KW_BOOLEAN;}
@@ -210,34 +210,34 @@ use         {pwrap("USE"); BEGIN(incl_module);}
 	  {unput(def[i-1]);}
 }
  						
-{SNUMBER}		{
-                  pwrap("SNUMBER"); 
-                  yylval.crepr = strdup(yytext); 
-                  return POSINT; 
-                }
+{SNUMBER}   {
+                pwrap("SNUMBER");
+                yylval.crepr = strdup(yytext);
+                return POSINT;
+            }
 
-{REAL}			{
-                  pwrap("REAL_NUM");
-                  yylval.crepr = strdup(yytext); 
-                  return REAL; 
-                }
+{REAL}      {
+                pwrap("REAL_NUM");
+                yylval.crepr = strdup(yytext);
+                return REAL;
+            }
 
-{STRING}		{
-                  pwrap("STRING"); 
-                  yylval.crepr = strdup(yytext); 
-                  return STRING; 
-                }
+{STRING}    {
+                pwrap("STRING");
+                yylval.crepr = strdup(yytext);
+                return STRING;
+            }
                 
-{STR_LIT}       {
-                  pwrap("STR_LIT");  
-                  yylval.crepr = strdup(yytext); 
-                  return STR_LIT; 
-                }
+{STR_LIT}   {
+                pwrap("STR_LIT");
+                yylval.crepr = strdup(yytext);
+                return STR_LIT;
+            }
 
   /* arithmetic operators */
 "+"	        {pwrap("OP_PLUS"); return KW_OP_PLUS;}
 "-"         {pwrap("OP_MINUS"); return KW_OP_MINUS;}
-"*"			{pwrap("OP_MUL"); return KW_OP_MUL;}
+"*"         {pwrap("OP_MUL"); return KW_OP_MUL;}
 "/"         {pwrap("OP_DIV"); return KW_OP_DIV;}
 
   /* relational operators */
@@ -257,11 +257,11 @@ use         {pwrap("USE"); BEGIN(incl_module);}
 ":="        {pwrap("OP_ASSIGN"); return KW_OP_ASSIGN;}
 
   /* (remaining) delimiters */
-";"			{pwrap("DEL_SEMICOLON"); return KW_SEMICOLON;}
+";"         {pwrap("DEL_SEMICOLON"); return KW_SEMICOLON;}
 ","         {pwrap("DEL_COMMA"); return KW_COMMA;}
-"."			{pwrap("DEL_DOT"); return KW_DOT;}
-"("			{pwrap("DEL_LPAR"); return KW_LPAR;}
-")"			{pwrap("DEL_RPAR"); return KW_RPAR;}
+"."         {pwrap("DEL_DOT"); return KW_DOT;}
+"("         {pwrap("DEL_LPAR"); return KW_LPAR;}
+")"         {pwrap("DEL_RPAR"); return KW_RPAR;}
 "["         {pwrap("DEL_LBRA"); return KW_LBRA;}
 "]"         {pwrap("DEL_RBRA"); return KW_RBRA;}
 ":"         {pwrap("DEL_COLON"); return KW_COLON;}

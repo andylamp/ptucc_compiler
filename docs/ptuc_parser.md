@@ -201,11 +201,134 @@ Precedence is a really important aspect of your grammar; that is... if you want 
 meaningful you are bound to be affected by it. But let's say
 
 
+# Freeing symbols
+
+This is a *very* important topic as if you want to produce an AST (Abstract Syntax Tree) you'd probably
+allocate some memory to do that; in languages like `C` or `C++` if you dynamically allocate memory you have
+to free it yourself; `bison` has no reasonable obligation to clean-up your mess, that's your job.
+
+Unfortunately most parsers I've seen that allocate memory assume that since that's done inside `bison` itself somehow
+they expect that `bison` (or `flex`) will take care of that but unfortunately that's not the case. Let's look an
+example that would produce a definite *memory-leak* in our program. We will use the above rule we created using the
+`POSINT` and `REAL` `tokens`; inside flex they have the return the following when they are matched:
+
+```c
+{SNUMBER}   {
+                yylval.crepr = strdup(yytext);
+                return POSINT;
+            }
+
+{REAL}      {
+                yylval.crepr = strdup(yytext);
+                return REAL;
+            }
+```
+
+The line `yylval.crepr = strdup(yytext);` means that we *copy* the value of `yytext` into the `yylval.crepr`
+(which is a `tag` in our `bison` `%union { ... }`). This means that both of these `tokens` are accompanied by a
+*dynamically* allocated vale stored in their `tag`. Hence in the following rule:
+
+```c
+// our union decl.
+%union
+{
+    char* crepr;
+}
+
+// later on...
+pos_real_add:
+      POSINT REAL {$$ = strtol($1, NULL, 10) + strtol($2, NULL, 10);}
+      ;
+```
+
+The `$1` and `$2` contain the values of `POSINT` and `REAL` respectively. The rule does its job (after first
+converting them to actual numbers using `strtol` function), which is to add the two and return their result by
+assigning it to `$$` -- there is a catch however. After the rule finishes (returns the `$$`) memory for
+`$1` and `$2` is not free'ed at any point, as after the calls to `strtol` they are not used anymore; thus they create
+a definite *memory-leak*. The correct way to handle *dynamically* allocated symbols or `tags` is to free them as soon as
+we have no use for them -- which is this case is after the calls to `strtol`; hence a correct implementation that does
+not create any leaks would be the following:
+
+```c
+// our different union
+%union
+{
+    char* crepr;
+    double val;
+}
+
+// token and types
+%token <crepr> POSINT REAL
+%type <val> pos_real_add
+
+
+// later on.
+pos_real_add:
+      POSINT REAL {$$ = strtol($1, NULL, 10) + strtol($2, NULL, 10); free($1); free($2);}
+      ;
+```
+
+Now let's look at yet another example of where handling these `free`'s is that obvious.
+
+```c
+// assume that above we had: %type <crepr> pos_int_num and %type <val> pos_add
+pos_int_num:
+    POSINT {$$ = $1; free($1);}
+    ;
+
+pos_add:
+    POSINT `+' POSINT {$$ = strtol($1, NULL, 10) + strtol($3, NULL, 10); free($1); free($3);}
+    ;
+```
+
+Here we have two rules, one that recognizes `POSINT`'s and one that simply performs an addition if the output is a
+`POSINT` followed by a `+` sign and another `POSINT`. Notice that that we should `free` up the values right after
+we are finished with them, so naturally one would say that in the `pos_int_num` rule we are
+done with the value of `POSINT` so we should free it. That's *incorrect* and would most likely cause a
+*segmentation-fault*; this is the case because the value of `$$` points to that particular string, since we assign `$$`
+to be equal with `$1` -- but `$1` is a pointer to the string. Thus the value of `$$` for each `POSINT` is the actual
+value that `$1` and `$3` will have in the `pos_add` rule; so if we free it there when `strtol` tries to use that
+will most likely fail -- not to mention that free will attempt to free an already free'ed location. The correct way of
+handling the above scenario would be the one below:
+
+```c
+// assume that above we had: %type <crepr> pos_int_num and %type <val> pos_add
+pos_int_num:
+    POSINT {$$ = $1;}
+    ;
+
+pos_add:
+    POSINT `+' POSINT {$$ = strtol($1, NULL, 10) + strtol($3, NULL, 10); free($1); free($3);}
+    ;
+```
+
+Sharp readers will immediately spot that the above segments regardless of the tips provided would be quite prone to
+double-free, or invalid-free errors and they would be perfectly right. This is why when dealing with such issues I have
+constructed a wrapper function in order to take care of these issues -- but it requires the user to obey a few simple
+rules. Let's illustrate the function first and then explain how it actually works.
+
+```c
+/*  handy clean-up function */
+void
+tf(char *s)
+  {if(s != NULL && strcmp(s, "") != 0) {free(s);}}
+```
+
+This is simple but *very* effective because we can call it freely on any symbol that we might want to free, even those
+that have already being released. This is done through the first `if` that checks if `s` is `NULL` or equal to `""`.
+The first is straightforward as that checks if `s` is a valid pointer while the second one is a bit weird at first;
+why check for that particular value you might ask? This is simple, we use that value to indicate that we have an
+empty string or a symbol that might not have a value inside that rule. Thus the rule is that we **always**
+expect `s` to have a value of `NULL` or `""` at any given point that we *don't* want to call
+`free` on that particular symbol. It's pretty neat and works quite well in practice (and doesn't clutter the
+code as well!).
+
+
 # Destructors
 
 # Creating `ptuc` grammar
 
-In this section I will briefly describe `ptuc` grammar rules are structured while also touching in
+In this section I will briefly describe `ptuc` grammar rules and how are structured while also touching in
 greater details some implementation related topics that I find are quite interesting.
 
 # Special bison commands
@@ -213,21 +336,35 @@ greater details some implementation related topics that I find are quite interes
 Here is a simple summary of the `bison` special commands and a brief description on 
 what they do -- a *cheat-sheet* if you'd like to call it that.
 
-* `%union`
-* `%token`
-* `%type`
-* `%right`
-* `%left`
-* `%nonassoc`
-* `%start`
-* `%expect`
-* `%pure_parser`
-* `%raw`
-* `%no_lines`
-* `%token_table`
-* `%define`
+* `%union`: indicates the available `tags` and their types.
+* `%token`: a numerical value that indicates a specific input is matched -- they originate usually from `flex`.
+* `%type`: is used to indicate that a `bison` state returns a value.
+* `%right`: used to indicate *right* precedence (e.g. a + b + c => a + (b + c)).
+* `%left`: used to indicate *left* precedence (e.g. a + b + c => (a + b) + c).
+* `%nonassoc`: used to indicate that the operators are *not-associated* and using it like so would indicate a syntax error.
+* `%start`: used to indicate our starting rule (or you could call it state as well).
+* `%expect`: used to indicate that we *expect* our grammar to have a specific number of *shift/reduce* conflicts
+(**not** *reduce/reduce** conflicts). If the number of errors differ, then a compilation error is
+thrown (e.g. `%expect n` if *shift/reduce* count is not *exactly* `n`, we fail to compile).
+* `%pure_parser`: used to indicate that we *want* our parser to be a reentrant; this means that it will not use global
+variables to communicate with `flex`. This option is useful when we want to create a thread-safe parser.
+* `%raw`: this is to enable `token` compatibility with `yacc`; `yacc` starts numbering multi-character `tokens`
+sequentially from `257` while `bison` normally starts from `3`. Single character `tokens` in `yacc` use their ANSI value.
+* `%no_lines`: this option doesn't inform the `C` compiler regarding the line numbering scheme (thus they don't
+generate the `#lines` pre-processor commands). Don't turn this off, as that enables to map your source code to the
+resulting `.c` file produced by `bison`; this helps debugging a lot.
+* `%token_table`: this generates an array of `token` names in the parser file. The generated array is named `yytname` and
+each `token` name is located as `yytname[i]` where `i` is the number `bison` has assigned to that `token`. Along with the
+ table `bison` generates some macros that are provide some useful information, these are:
+  * `YYNTOKENS`: Returns the number of defined `tokens` plus one (for the `EOF`).
+  * `YYNNTS`: Returns the number of *non-terminal* symbols (basically is the number of `tokens`).
+  * `YYNRULES`: Returns the number of grammar rules.
+  * `YYNSTATES`: Returns the number of (generated) parser states.
+* `%define`: allows us to tweak some parser parameters by defining some configuration properties (more [here][2]);
+the most common would be: `%define parse.error verbose` that enables more verbose syntax error information output.
 
 
 # Epilogue
 
 [1]: ptuc_spec.md
+[2]: http://www.gnu.org/software/bison/manual/html_node/_0025define-Summary.html
