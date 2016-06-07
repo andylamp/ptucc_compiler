@@ -515,6 +515,57 @@ of discarding a symbol that has a semantic value of `<crepr>` then only the dest
 
 # Error recovery
 
+In case we encounter a lexer (`flex`) or parser (`bison`) error under default conditions our parser will terminate
+after seeing the first error -- these are called *fail-fast* parsers, but nobody actually wants them... (except maybe
+lazy students). This means that if our input has more than one mistake we would only detect the first and exit! This
+process would get quite tedious as repeated compilations would be required in order to detect and fix all errors instead
+of reporting all errors in our source at the first parse.
+
+Thankfully `bison` has error recovery capabilities! They are also quire simple to define and explain but require a
+lot of skill, practice and a hellish insight in order to be used correctly. Say for example that we have the following
+rule:
+
+```c
+program_decl:
+    KW_PROGRAM IDENT KW_SEMICOLON
+    ;
+```
+
+What if an error was encountered inside that rule, say for example we had a *valid* `KW_PROGRAM` token as well as
+an `IDENT` but not a semicolon (`;`); then if we didn't have error recovering capabilities our parser would end as we
+previously said.
+
+In order to allow `bison` to recover from a syntax error we have to create a rule that recognizes a *special* `bison`
+`token` called `error`. It is defined by default and there is no need to explicitly define it. Thus the above rule
+would be modified as follows in order to allow for error recovery:
+
+```c
+program_decl:
+    KW_PROGRAM IDENT KW_SEMICOLON
+    | error KW_SEMICOLON
+    ;
+```
+
+This does a couple of things, if we detect an error then we will immediately switch to the second (and error handling)
+case where we will **ignore** everything encountered up the next semicolon (`;`). This switch happens by discarding both
+the value of the current tags in context (if any) as we as all the tokens on the `bison` stack until we reach a point
+where the rule which contains the `error` token is acceptable, in our case that happens when we encounter the *next*
+ semicolon (`;`). Of course for all of the discarded symbols the appropriate destructors will be run as well, if any.
+
+ Additionally, after encountering an error its likely are that this will create much more consecutive errors; to
+ avoid this console spam `bison` *suppresses* error messages until *three* (3) consecutive `tokens` have been parsed
+ and shifted. If you don't like this behavior by default you can put the `yyerrok` inside the `error` rule like so:
+
+```c
+program_decl:
+    KW_PROGRAM IDENT KW_SEMICOLON
+    | error KW_SEMICOLON { yyerrok; }
+    ;
+```
+
+Later on when defining our `ptuc` grammar we will give insights regarding the places we elected to put our error
+recovering states.
+
 # Creating `ptuc` grammar
 
 In this section I will briefly describe `ptuc` grammar rules and how are structured while also touching in
