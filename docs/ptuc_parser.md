@@ -315,8 +315,9 @@ As a final example, the complete precedence rule list for `ptuc` follows.
 ```
 
 Again, sharp readers will see notice in the above code something that I have yet to explain; and again...
-they'd be right! I left that for last. Notice that there is no `token` defined for `IF_THEN` or `TYPE_CASE_PREC`, so
-can declare precedence for arbitrary symbols and use the term `%prec` to enforce that precedence into a rule.
+they'd be right! As I left that for last. Notice that there is no `token` defined for `IF_THEN` or
+`TYPE_CASE_PREC`, so it turns out that one can declare precedence for arbitrary symbols and use the
+term `%prec` to enforce that precedence into a rule, like so:
 
  ```c
  add_op:
@@ -324,7 +325,7 @@ can declare precedence for arbitrary symbols and use the term `%prec` to enforce
     ;
  ```
 
-So using the `add_op` rule as previously we can modify it as follows to *enforce* that particular rule to have the
+So using the `add_op` rule we can modify it as follows to *enforce* that particular rule to have the
 precedence (and associativity) of `IF_THEN` or any other symbol. We will explain why we need `IF_THEN` and
 `TYPE_CASE_PREC` when dealing with `ptuc` grammar.
 
