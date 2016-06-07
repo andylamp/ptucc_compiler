@@ -1,7 +1,7 @@
 # Creating the parser for `ptuc`
 
 In the final section of this two-part tutorial we will tackle the creation of our actual parser which checks
-if our matched input tokens (coming from `flex`) are in a syntactically correct order against our `ptuc`
+if our matched input tokens (coming from `flex`) are emitted in a syntactically correct order against our `ptuc`
 specification. We will use `(gnu) bison` in order to create our parser and this implementation was tested
 with versions of `bison >= 3.0.4`. Although `bison` originates from `yacc` it's a superset of its features
 so I don't know if the code here is compatible with `yacc` -- I would assume that it isn't by default, but
@@ -24,14 +24,15 @@ As with `flex`, `bison` has again a similar layout which is as follows:
 
 # Bison user code
 
-The code that resides here is copied *verbatim* in the resulting `.c` file; this might include custom libraries, constants, includes and so on.
-Most includes and function prototype declarations happen at the top while their actual definition happens at the bottom user code section.
+The code that resides here is copied *verbatim* in the resulting `.c` file; this might include custom libraries,
+constants, includes and so on. Most includes and function prototype declarations happen at the top while their actual
+definition happens at the bottom user code section.
 
 # Bison stack types
 
-`bison` `tokens` and `types` are allowed to have an accompanied value; that value can be used for emitting text or treating it
-as a return value in order to do a specific task later on. If we need this functionality we have to tell `bison` the type of
-that particular `tag` by declaring it inside a special `union` like this:
+`bison` `tokens` and `types` are allowed to have an accompanied value; that value can be used for emitting text or
+treating it as a return value in order to do a specific task later on. If we need this functionality we have to tell
+`bison` the type of that particular `tag` by declaring it inside a special `union` like this:
 
 ```c
 %union
@@ -41,16 +42,17 @@ that particular `tag` by declaring it inside a special `union` like this:
 }
 ```
 
-This `union` tells `bison` that when we use a `token` or a `type` that is accompanied by `tagA` tag then we can use its value
-like a normal `C` string literal; on the other hand if its accompanied by a `tagB` tag then that value will be treated as a
-`double`. It has to be noted that being a `union` and not a `struct` it also means the values use *shared* memory and not
-separate segments as opposed to `struct` fields. We can have as many different tags as we want inside the union and both
-`tokens` and `types` can have the *same* tag.
+This `union` tells `bison` that when we use a `token` or a `type` that is accompanied by `tagA` then we can use its value
+like a normal `C` string literal; on the other hand if its accompanied by `tagB` then that value will be treated as a
+`double` instead. It has to be noted that being a `union` and not a `struct` it also means the values use
+*shared* memory and not separate segments as opposed to `struct` fields. We can have as many different tags as we
+want inside the union and both `tokens` and `types` can have the *same* tag.
 
 # Bison tokens
 
 As we previously said in our `flex` part the `tokens` must be *firstly* defined in our parser so that we can
-then generate the include `.tab.h` which we use in `flex`. Token definitions must be inside `bison`'s declaration
+then generate the include `.tab.h` which we use in `flex`. Tokens are also called *terminal symbols* because
+we cannot break them into simpler entities. Token declarations must be inside `bison`'s declaration
 section. Additionally tokens can have "tags", which basically says to `bison` that this token can accompanied by
 a particular value; hence a token definition has the following syntax:
 
@@ -90,10 +92,11 @@ The `tags` are again defined inside the union as is the case with the `tags` use
 
 # Constructing grammar rules
 
-In `bison` we create a *grammar* which syntactically evaluates if the `tokens` that `flex` generated are syntactically correct -- or to put it more simply, the order they are
-emitted is allowed by our *grammar*. In order to do that we will have to take a good look at our language specification and break it down to some building blocks that we then
-have to express. In `ptuc` we have a `program` which can have `modules`, `declarations` and a `body` ending with a `dot`. This skeleton already gives us an intuition of how
-to express our language in a rule.
+In `bison` we create a *grammar* which syntactically evaluates if the `tokens` that `flex` generated are emitted in a
+syntactically correct order. In order to do that we will have to take a good look at our language specification and break
+it down to building blocks that we then have to express using `bison` rules. In `ptuc` abstractly we have a `program`
+which can have `modules`, `declarations` and a `body` ending with a `dot`. This skeleton already gives us an
+intuition of how to express our language in a rule.
 
 Concretely the rule for our whole program is the following:
 
@@ -103,9 +106,9 @@ program:
   ;
 ```
 
-We see that the `grammar` rule program is satisfied by `incl_mods`, `program_decl`, `decls`, `body` and `KW_DOT` are
-satisfied in that order. In `bison` a rule is matched from *left-to-right* and all of the sub-rules must be satisfied as well.
-So for this particular example the matching order is the following:
+We see that the grammar rule `program` is satisfied if and only if `incl_mods`, `program_decl`, `decls`, `body` and
+`KW_DOT` are satisfied in that *specific* order. In `bison` a rule is matched from *left-to-right* and all of the
+sub-rules must be satisfied as well. So for this particular example the matching order is the following:
 
 1. `incl_mods`
 2. `program_decl`
@@ -114,7 +117,7 @@ So for this particular example the matching order is the following:
 5. `KW_DOT`
 
 These rules can be `tokens` or other grammar rules that have their own constraints, which as said previously have to be
-satisfied as well -- think of it as a pre-order traversal. Rules also have their own syntax which is the following:
+satisfied as well -- think of it like a pre-order tree traversal. Grammar rules in general have the following syntax:
 
 ```c
 rule_name:
@@ -133,16 +136,16 @@ by lines so this would be perfectly legal as well:
 rule_name: caseA | caseB | ... | caseN;
 ```
 
-Additionally, grammar rules can have return values and (indirectly) take arguments. In order for a rule to return a value of
-type `tag` it has to be declared in the stack type `union` and use the `type` directive to inform `bison` that
-we expect that particular rule to return a value of type `tag`. With that in mind, let's go and show how to create a simple
-rule.
+Additionally, grammar rules can have return values and (indirectly) take arguments. In order for a rule to return a
+value of type `tag` it has to be declared in the stack type `union` and use the `type` directive to inform `bison` that
+we expect that particular rule to return a value of type `tag`. With that in mind, let's go and show how to create a
+simple rule.
 
 ## Simple rules
 
-A simple rule, is just that... so a simple rule would be one that describes all of the scalar values in `ptuc`, so let's
-go ahead and implement it. By our language specification ([here][1]) we see that the *scalar* values are comprised out of
-the following:
+A simple rule, is one that comprises only our of *terminal symbols*... so an example of a simple rule would be one
+that describes all of the scalar values in `ptuc`, so let's go ahead and implement it. By our language specification
+([here][1]) we see that the *scalar* values are comprised out of the following:
 
 * positive constant integers (`token`: `POSINT`)
 * and real numbers (`token`: `REAL`)
@@ -161,7 +164,7 @@ either a `POSINT` or `REAL` `token` this rule will be matched, this `or` is indi
 the dash (`|`) separating each case. The other important thing is that this particular rule
 returns a value; this is indicated by the assignment of `$1` to `$$` as `$$` is a symbol that indicates
 the return value of that rule (if any) and the `$1` indicates the value that accompanies the first
-rule or `token` in that case. Let's look at another example.
+rule or `token`. Let's look at another example.
 
 ```c
 // union entry
@@ -188,12 +191,41 @@ be matched and the resulting value would be the addition of the two.
 
 ## Complex rules
 
-We talked above on how to construct really basic rules, now we will see how to create complex rules --
-which (normally) will comprise most of your real world grammars. I normally separate the rules into
-two main categories, these being:
+We talked above on how to construct really basic rules, now we will see how to create more complex rules --
+which (normally) will comprise most of your real world grammars. I personally separate these rules into
+two main categories, which are:
 
 1. composition rules
 2. lists (or recursive rules)
+
+## Composition rules
+
+Composition rules are basically rules that are composed from one or more rules (complex or simple). We have already
+seen one such rule previously, which was:
+
+```c
+program:
+  incl_mods program_decl decls body KW_DOT
+  ;
+```
+
+This a composition rule as it has a case which is comprised out of *four* complex rules and one
+terminal symbol (`KW_DOT`). Generally speaking a complex rule is one that has *at least one* case which
+is composed with *at least one* non-terminal terminal symbol.
+
+## Lists
+
+Lists are a special composition rule type which is very interesting due to it property of letting us do
+recursive matches. In order to understand this a bit better let's look at the definition of one such rule:
+
+```c
+/* identifiers */
+ident_list:
+    IDENT
+    | ident_list KW_COMMA IDENT
+    ;
+```
+
 
 # Precedence rules
 
@@ -605,6 +637,9 @@ the most common would be: `%define parse.error verbose` that enables more verbos
 
 
 # Epilogue
+
+I had a blast creating this project and writing this guide. Due to my recent dabbling I don't get to play much with
+these tools so it was a nice escape. Hopefully you learned something through all of this ;).
 
 [1]: ptuc_spec.md
 [2]: http://www.gnu.org/software/bison/manual/html_node/_0025define-Summary.html
