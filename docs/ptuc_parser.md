@@ -107,11 +107,11 @@ We see that the `grammar` rule program is satisfied by `incl_mods`, `program_dec
 satisfied in that order. In `bison` a rule is matched from *left-to-right* and all of the sub-rules must be satisfied as well.
 So for this particular example the matching order is the following:
 
-1) `incl_mods`
-2) `program_decl`
-3) `decls`
-4) `body`
-5) `KW_DOT`
+1. `incl_mods`
+2. `program_decl`
+3. `decls`
+4. `body`
+5. `KW_DOT`
 
 These rules can be `tokens` or other grammar rules that have their own constraints, which as said previously have to be
 satisfied as well -- think of it as a pre-order traversal. Rules also have their own syntax which is the following:
@@ -192,8 +192,8 @@ We talked above on how to construct really basic rules, now we will see how to c
 which (normally) will comprise most of your real world grammars. I normally separate the rules into
 two main categories, these being:
 
-1) composition rules
-2) lists (or recursive rules)
+1. composition rules
+2. lists (or recursive rules)
 
 # Precedence rules
 
