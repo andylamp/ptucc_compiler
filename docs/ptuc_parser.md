@@ -268,7 +268,7 @@ pos_real_add:
       ;
 ```
 
-Now let's look at yet another example of where handling these `free`'s is that obvious.
+Now let's look at yet another example of where handling these `free`'s isn't that obvious.
 
 ```c
 // assume that above we had: %type <crepr> pos_int_num and %type <val> pos_add
@@ -282,7 +282,7 @@ pos_add:
 ```
 
 Here we have two rules, one that recognizes `POSINT`'s and one that simply performs an addition if the output is a
-`POSINT` followed by a `+` sign and another `POSINT`. Notice that that we should `free` up the values right after
+`POSINT` followed by a plus sign (`+`) and another `POSINT`. Notice that that we should `free` up the values right after
 we are finished with them, so naturally one would say that in the `pos_int_num` rule we are
 done with the value of `POSINT` so we should free it. That's *incorrect* and would most likely cause a
 *segmentation-fault*; this is the case because the value of `$$` points to that particular string, since we assign `$$`
@@ -319,7 +319,7 @@ that have already being released. This is done through the first `if` that check
 The first is straightforward as that checks if `s` is a valid pointer while the second one is a bit weird at first;
 why check for that particular value you might ask? This is simple, we use that value to indicate that we have an
 empty string or a symbol that might not have a value inside that rule. Thus the rule is that we **always**
-expect `s` to have a value of `NULL` or `""` at any given point that we *don't* want to call
+expect `s` to be a *pointer* and have a value of `NULL` or `""` at any given point that we *don't* want to call
 `free` on that particular symbol. It's pretty neat and works quite well in practice (and doesn't clutter the
 code as well!).
 
