@@ -17,7 +17,7 @@ ifeq ($(PROFILE),1)
 else
   PROFFLAGS= 
   PLFLAGS=
-  BISONFLAGS=--report=state --report-file=./bstate.debug
+  BISONFLAGS=-d --report=state --report-file=./bstate.debug
 endif
 
 INCLUDE_PATH=-I. 
@@ -68,10 +68,7 @@ ptucc_lex.c: ptucc_lex.l ptucc_parser.tab.h
 	$(FLEX) -o ptucc_lex.c ptucc_lex.l
 
 ptucc_parser.tab.c ptucc_parser.tab.h: ptucc_parser.y
-	$(BISON) -d $(BISONFLAGS) ptucc_parser.y
-
-bison_tab:
-	$(BISON) -d ptucc_parser.y
+	$(BISON) $(BISONFLAGS) ptucc_parser.y
 
 %: ptucc_scan ptucc %.ptuc
 	./ptucc < $@.ptuc > $@.c
@@ -95,11 +92,8 @@ realclean:
 	-rm $(C_PROG) $(C_OBJECTS) $(C_GEN) .depend *.o sample001.c sample001
 	-rm .depend
 	-touch .depend
-
-depend: $(C_SOURCES)
-	$(CC) $(CFLAGS) -MM $(C_SOURCES) > .depend
 	
-clean: realclean depend
+clean: realclean
 
 include .depend
 
