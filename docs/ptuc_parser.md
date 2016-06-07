@@ -24,7 +24,7 @@ As with `flex`, `bison` has again a similar layout which is as follows:
 
 # Bison user code
 
-The code that resides here is copied *verbatim* in the resulting `.c` file; this might include custom libraries, constants, includes and so on. 
+The code that resides here is copied *verbatim* in the resulting `.c` file; this might include custom libraries, constants, includes and so on.
 Most includes and function prototype declarations happen at the top while their actual definition happens at the bottom user code section.
 
 # Bison stack types
@@ -44,7 +44,7 @@ that particular `tag` by declaring it inside a special `union` like this:
 This `union` tells `bison` that when we use a `token` or a `type` that is accompanied by `tagA` tag then we can use its value
 like a normal `C` string literal; on the other hand if its accompanied by a `tagB` tag then that value will be treated as a
 `double`. It has to be noted that being a `union` and not a `struct` it also means the values use *shared* memory and not
-separate segments as opposed to `struct` fields. We can have as many different tags as we want inside the union and both 
+separate segments as opposed to `struct` fields. We can have as many different tags as we want inside the union and both
 `tokens` and `types` can have the *same* tag.
 
 # Bison tokens
@@ -90,20 +90,20 @@ The `tags` are again defined inside the union as is the case with the `tags` use
 
 # Constructing grammar rules
 
-In `bison` we create a *grammar* which syntactically evaluates if the `tokens` that `flex` generated are syntactically correct -- or to put it more simply, the order they are 
+In `bison` we create a *grammar* which syntactically evaluates if the `tokens` that `flex` generated are syntactically correct -- or to put it more simply, the order they are
 emitted is allowed by our *grammar*. In order to do that we will have to take a good look at our language specification and break it down to some building blocks that we then
-have to express. In `ptuc` we have a `program` which can have `modules`, `declarations` and a `body` ending with a `dot`. This skeleton already gives us an intuition of how 
+have to express. In `ptuc` we have a `program` which can have `modules`, `declarations` and a `body` ending with a `dot`. This skeleton already gives us an intuition of how
 to express our language in a rule.
 
 Concretely the rule for our whole program is the following:
 
 ```c
-program:  
-  incl_mods program_decl decls body KW_DOT   		  
+program:
+  incl_mods program_decl decls body KW_DOT
   ;
 ```
 
-We see that the `grammar` rule program is satisfied by `incl_mods`, `program_decl`, `decls`, `body` and `KW_DOT` are 
+We see that the `grammar` rule program is satisfied by `incl_mods`, `program_decl`, `decls`, `body` and `KW_DOT` are
 satisfied in that order. In `bison` a rule is matched from *left-to-right* and all of the sub-rules must be satisfied as well.
 So for this particular example the matching order is the following:
 
@@ -113,20 +113,20 @@ So for this particular example the matching order is the following:
 4) `body`
 5) `KW_DOT`
 
-These rules can be `tokens` or other grammar rules that have their own constraints, which as said previously have to be 
+These rules can be `tokens` or other grammar rules that have their own constraints, which as said previously have to be
 satisfied as well -- think of it as a pre-order traversal. Rules also have their own syntax which is the following:
 
 ```c
 rule_name:
     caseA
     | caseB
-        . 
+        .
         .
     | caseN
     ;
 ```
-A rule starts by typing its *unique* name then a colon (`:`) followed by a number of cases which are separated 
-with a dash `|`; the last rule *must* be followed by a semicolon (`;`). Also rules don't have to be separated 
+A rule starts by typing its *unique* name then a colon (`:`) followed by a number of cases which are separated
+with a dash `|`; the last rule *must* be followed by a semicolon (`;`). Also rules don't have to be separated
 by lines so this would be perfectly legal as well:
 
 ```c
@@ -156,11 +156,11 @@ scalar_vals:
       ;
 ```
 
-A lot is happening here, but the main thing to note is that if `flex` returns to `bison` 
-either a `POSINT` or `REAL` `token` this rule will be matched, this `or` is indicated by 
-the dash (`|`) separating each case. The other important thing is that this particular rule 
+A lot is happening here, but the main thing to note is that if `flex` returns to `bison`
+either a `POSINT` or `REAL` `token` this rule will be matched, this `or` is indicated by
+the dash (`|`) separating each case. The other important thing is that this particular rule
 returns a value; this is indicated by the assignment of `$1` to `$$` as `$$` is a symbol that indicates
-the return value of that rule (if any) and the `$1` indicates the value that accompanies the first 
+the return value of that rule (if any) and the `$1` indicates the value that accompanies the first
 rule or `token` in that case. Let's look at another example.
 
 ```c
@@ -188,7 +188,7 @@ be matched and the resulting value would be the addition of the two.
 
 ## Complex rules
 
-We talked above on how to construct really basic rules, now we will see how to create complex rules -- 
+We talked above on how to construct really basic rules, now we will see how to create complex rules --
 which (normally) will comprise most of your real world grammars. I normally separate the rules into
 two main categories, these being:
 
@@ -197,8 +197,8 @@ two main categories, these being:
 
 # Precedence rules
 
-Precedence is a really important aspect of your grammar; that is... if you want to do something 
-meaningful you are bound to be affected by it. But let's say
+Precedence is a really important aspect of your grammar; that is... if you want to do something
+meaningful with it you are bound to be affected by it. But let's say
 
 
 # Freeing symbols
@@ -321,26 +321,87 @@ why check for that particular value you might ask? This is simple, we use that v
 empty string or a symbol that might not have a value inside that rule. Thus the rule is that we **always**
 expect `s` to be a *pointer* and have a value of `NULL` or `""` at any given point that we *don't* want to call
 `free` on that particular symbol. It's pretty neat and works quite well in practice (and doesn't clutter the
-code as well!).
+codebase as well!).
 
 
 # Destructors
+
+Another thing that important (that is neglected quite often I am afraid) is how to handle things when
+something goes bad during parsing -- and oh boy in compilers isn't that usual. Thankfully `bison` has the ability
+to clean its own stuff when something does go wrong -- but what about *our* dynamically allocated symbols. Thankfully,
+`bison` has a facility that can help us free-up own resources by calling a `destructor` on each of the discarded
+symbols -- but what does `bison` consider as a *discarded symbol*? The following list is mostly an
+extract from `bison`'s manual which defines that `bison` considers as *discarded symbols*.
+
+Valid *discarded symbols* are the symbols that fall into *at least* one of the following categories:
+
+* stacked symbols popped during the first phase of error recovery
+* incoming terminals during the second phase of error recovery
+* the current lookahead and the entire stack (except the current right-hand side symbols) in the case the parser is *fail-fast*
+* the current lookahead and the entire stack (including the current right-hand side symbols) when the `C++` parser catches an exception in `parse`
+* the start symbol when the parser succeeds
+
+Additionally, `bison` only calls the destructors for *user-defined* symbols. If you call a destructor for a
+`tag`-less `type` or `token` when their destructor expects one to be present a warning notifying the user of
+that fact should pop during compilation. One such example is when you use the `<*>` as a `tag`,
+which indicates that *all* of your `tokens`, `types` are expected to return a value. Let's first look at the
+destructor syntax:
+
+```c
+%destructor { /* C code */ } symbol_list
+```
+
+The destructor is placed into the *declaration* section of the bison file and between the brackets `{`, `}` any valid
+`C` or `C++` code can be entered followed by a list of symbols that this destructor should be executed for. So this
+would be a perfectly legal destructor for the `crepr` tag:
+
+```c
+%destructor { tf($$); } <crepr>
+```
+
+Destructors have the ability to be executed on a *per-tag* basis or globally; that means we can assign different
+destructors for different `tags`. That's the case because some `tags` might have different `types` declared for
+them inside the `union`, hence a different way of freeing them might be required. For our needs and purposes the
+above destructor will suffice, but for reference here are a couple more valid examples:
+
+```c
+%union
+{
+    void *aptr;
+    char* crepr;
+}
+
+/* destructor specific for <crepr> tag */
+%destructor { tf($$); } <crepr>
+/* destructor specific for <a> tag */
+%destructor { if(a) {free(a);}; } <a>
+%destructor { /* any tag destructor */ } <*>
+%destructor { /* tagless symbol destructor */ } <>
+```
+
+Notice the `tag`-less destructor, which is called on every symbol that is present. This might raise the question
+on how to select which destructor to call since there might be more than one. Should `bison` detects that there is
+a `tag`-specific destructor for a discarded symbol it will call that and ignore the more generic one, so in case
+of discarding a symbol that has a semantic value of `<crepr>` then only the destructor for `<crepr>` will be called.
+
+
+# Error recovery
 
 # Creating `ptuc` grammar
 
 In this section I will briefly describe `ptuc` grammar rules and how are structured while also touching in
 greater details some implementation related topics that I find are quite interesting.
 
-# Special bison commands
+# Special `bison` commands
 
-Here is a simple summary of the `bison` special commands and a brief description on 
+Here is a simple summary of the `bison` special commands and a brief description on
 what they do -- a *cheat-sheet* if you'd like to call it that.
 
 * `%union`: indicates the available `tags` and their types.
 * `%token`: a numerical value that indicates a specific input is matched -- they originate usually from `flex`.
 * `%type`: is used to indicate that a `bison` state returns a value.
-* `%right`: used to indicate *right* precedence (e.g. a + b + c => a + (b + c)).
-* `%left`: used to indicate *left* precedence (e.g. a + b + c => (a + b) + c).
+* `%right`: used to indicate *right* precedence (e.g. a + b + c -> a + (b + c)).
+* `%left`: used to indicate *left* precedence (e.g. a + b + c -> (a + b) + c).
 * `%nonassoc`: used to indicate that the operators are *not-associated* and using it like so would indicate a syntax error.
 * `%start`: used to indicate our starting rule (or you could call it state as well).
 * `%expect`: used to indicate that we *expect* our grammar to have a specific number of *shift/reduce* conflicts
