@@ -135,7 +135,7 @@ rule_name: caseA | caseB | ... | caseN;
 
 Additionally, grammar rules can have return values and (indirectly) take arguments. In order for a rule to return a value of
 type `tag` it has to be declared in the stack type `union` and use the `type` directive to inform `bison` that
-we expect that particular rule to return a value of type `tag`. With that in mind, let's go an show how to create a simple
+we expect that particular rule to return a value of type `tag`. With that in mind, let's go and show how to create a simple
 rule.
 
 ## Simple rules
@@ -198,8 +198,135 @@ two main categories, these being:
 # Precedence rules
 
 Precedence is a really important aspect of your grammar; that is... if you want to do something
-meaningful with it you are bound to be affected by it. But let's say
+meaningful with it you are bound to be affected by it. But how is precedence demonstrated? Let's first show an example,
+support that we have to add three numbers `a`, `b` and `c` (`a` + `b` + `c`). Now also suppose that we have the
+following grammar rule for addition:
 
+ ```c
+ add_op:
+    num `+` num
+    ;
+ ```
+
+ This rule expects two numbers and a plus sign (`+`) between them, but upon parsing the input we have the following:
+
+ ```
+ num1 -> `+` -> num2 -> `+` -> num3
+ ```
+
+ This would create a *shift/reduce* conflict as bison does not now how to **precisely** parse the input as there
+ is more than one way of parsing the tokens received. This is because we can either parse the input as:
+
+```c
+(num1 `+` num2) `+` num3
+```
+
+Which would result in the following operations from `bison`:
+
+1. `(num1 + num2)` match
+2. reduce using `add_op`
+3. shift result
+4. `(res1_2 + num3)` match
+5. reduce using `add_op`
+6. shift result
+
+On the other hand, we could also parse it like this (perfectly legal) way:
+
+```c
+num1 `+` (num2 `+` num3)
+```
+
+Which would result in the following operations from `bison`:
+
+1. `(num2 + num3)` match
+2. reduce using `add_op`
+3. shift result
+4. `(num1 + res2_3)` match
+5. reduce using `add_op`
+6. shift result
+
+The first example is how we parse the expression using *left* operator associativity while the second case shows how
+we would parse the expression using *right* associativity. The actual problem lies when we have more than one operators
+to process in sequence as `bison` does not know if it should reduce or shift; by default `bison` elects to
+*shift* instead of reduce.
+
+
+There are *four* (4) types of precedence types in `bison` three (3) of which declare both precedence as
+well as associativity while the last (as its name suggests) declares only precedence. The complete list is
+the following:
+
+* left (`%left`): Indicates that this operator has *left* associativity (e.g. (a + b) + c is preferred)
+    * syntax is: `%left symbols`
+* right (`%right`): Indicates that this operator has *right* associativity (e.g. a + (b + c) is preferred)
+    * syntax is: `%right symbols`
+* nonassoc (`%nonassoc`): Indicates that this operator cannot be seen in sequence and is considered a *syntax error*
+if that's encountered (e.g. a + b + c would throw an error).
+    * syntax is: `%nonassoc symbols`
+* precedence (`%precedence`): Indicates just precedence **not** associativity.
+
+In the previous cases, precedence did not actually affect the result but there are some cases that
+precedence *does* affect the result; one such example is if we had the following:
+
+```c
+a * b + c
+```
+
+Here we don't have precedence for sequential operations using the same operator but different ones; again if no
+precedence is set for the multiplication (`*`) and addition operator (`+`), `bison` would not be certain which
+operation to perform first, `a * b` or `b + c` and a shift/reduce conflict would again occur. Of course we
+can easily see that doing `(a * b) + c` is **not** the same as `a * (b + c)`. This is solved by determining the
+precedence of the *operator itself against the others*. This actually took me quite a while to figure out as I did not
+spot it right away when reading the documentation.
+
+When declaring precedence groups the group with the **higher line number** has **greater** precedence than
+the previous ones. It's also good practice to group operator of equal precedence in the same declaration.
+As a final example, the complete precedence rule list for `ptuc` follows.
+
+```c
+%left KW_SEMICOLON
+
+/* Class 8 prec. group */
+%left KW_OP_OR KW_OR
+
+/* Class 7 prec. group */
+%left KW_OP_AND KW_AND
+
+/* Class 6 prec. group */
+%left KW_EQ KW_DIFF KW_LESS_EQ KW_LESS KW_GREATER_EQ KW_GREATER
+
+/* Class 5 prec. group */
+%left KW_OP_PLUS KW_OP_MINUS
+
+/* Class 4 prec. group */
+%left KW_OP_MUL KW_OP_DIV KW_DIV KW_MOD
+
+/* Class 3 prec. group (for casting) */
+%right TYPE_CAST_PREC
+
+/* Class 2 prec. group */
+%right UNARY_PREC
+
+/* Class 1 prec. group (highest precedence) */
+%right KW_NOT KW_OP_NOT
+
+/* dangling else lookalikes */
+%precedence IF_THEN
+%precedence KW_ELSE
+```
+
+Again, sharp readers will see notice in the above code something that I have yet to explain; and again...
+they'd be right! I left that for last. Notice that there is no `token` defined for `IF_THEN` or `TYPE_CASE_PREC`, so
+can declare precedence for arbitrary symbols and use the term `%prec` to enforce that precedence into a rule.
+
+ ```c
+ add_op:
+    num `+` num %prec IF_THEN
+    ;
+ ```
+
+So using the `add_op` rule as previously we can modify it as follows to *enforce* that particular rule to have the
+precedence (and associativity) of `IF_THEN` or any other symbol. We will explain why we need `IF_THEN` and
+`TYPE_CASE_PREC` when dealing with `ptuc` grammar.
 
 # Freeing symbols
 
