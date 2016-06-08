@@ -267,17 +267,17 @@ incl_mod:
       | error KW_SEMICOLON {$$ = "";};
       ;
 
-program_decl : 
-              KW_PROGRAM IDENT KW_SEMICOLON  	{ $$ = $2; }
-              | error KW_SEMICOLON {$$ = "";}
-              ;
+program_decl:
+    KW_PROGRAM IDENT KW_SEMICOLON  	{ $$ = $2; }
+    | error KW_SEMICOLON {$$ = "";}
+    ;
 
-body : 
-      KW_BEGIN statements KW_END 
+body: 
+    KW_BEGIN statements KW_END
         {$$ = template("{%s}", $2); tf($2);}
-      | KW_BEGIN error KW_END 
+    | KW_BEGIN error KW_END
         {$$ = "";}
-      ;
+    ;
 
 /* flexible decls allow in any order variable, type, function decls */      
 decls:
@@ -322,7 +322,9 @@ func_decl:
         ;
 
 func_body: 
-    KW_BEGIN func_stmts KW_END {$$ = template("{%s}", $2); tf($2);}//{$$ = $2;}
+    KW_BEGIN func_stmts KW_END {$$ = template("{%s}", $2); tf($2);}
+    | KW_BEGIN error KW_END
+        {$$ = "";}
     ;
 
 /* functions have their own statement decl. as
@@ -681,8 +683,8 @@ func_exp_join:
           | KW_RESULT         {$$ = strdup("result");}
           ;
 
-
-basic_exp: /* Default action: $$ = $1 */
+/* composition for all of the types that can be an expression */
+basic_exp: 
           type_cast exp_join %prec TYPE_CAST_PREC
             {$$ = template("%s %s", $1, $2); tf($1); tf($2); }
           | KW_LPAR basic_exp KW_RPAR {$$ = template("(%s)", $2); tf($2);}
@@ -690,16 +692,15 @@ basic_exp: /* Default action: $$ = $1 */
             {$$ = $1;}
           | lit_vals
             {$$ = $1;}
+          | string_vals
+            {$$ = $1;}
           | expression
             {$$ = $1;}
-       
           ;
        
 expression:
           one_side_exp {$$ = $1;}
           | two_side_exp {$$ = $1;}
-          | string_vals
-            {$$ = $1;}
           ;
 
 /* two sided expr, e.g. expr or expr, expr and expr etc */                    

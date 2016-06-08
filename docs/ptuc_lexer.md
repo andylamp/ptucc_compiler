@@ -342,7 +342,7 @@ first digit of a potential integer part. The final result is shown below.
 ```c
 SDIGIT    [1-9]
 DIGIT     [0-9]
-SNUMBER   {SDIGIT}{DIGIT}*
+SNUMBER   (0|{SDIGIT}{DIGIT}*)
 NUMBER    {DIGIT}{DIGIT}*
 DECIMAL   ("."{NUMBER})|({SNUMBER}("."{NUMBER}?)?)
 REAL      {DECIMAL}([eE][+-]?{SNUMBER})?

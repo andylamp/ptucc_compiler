@@ -98,7 +98,7 @@ void msg(char *s) {
 ID        [a-zA-Z_][0-9a-zA-Z_]*
 SDIGIT    [1-9]
 DIGIT     [0-9]
-SNUMBER   {SDIGIT}{DIGIT}*
+SNUMBER   (0|{SDIGIT}{DIGIT}*)
 NUMBER    {DIGIT}{DIGIT}*
 DECIMAL   ("."{NUMBER})|({SNUMBER}("."{NUMBER}?)?)
 REAL      {DECIMAL}([eE][+-]?{SNUMBER})?
