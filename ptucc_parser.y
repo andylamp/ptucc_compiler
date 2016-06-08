@@ -298,48 +298,46 @@ decls:
 
 /* proc. decl. */
 proc_decl:
-        KW_PROCEDURE IDENT
-          KW_LPAR type_only_arguments KW_RPAR KW_SEMICOLON
-          decls body KW_SEMICOLON
-          {
+    KW_PROCEDURE IDENT
+        KW_LPAR type_only_arguments KW_RPAR KW_SEMICOLON
+        decls body KW_SEMICOLON
+        {
             $$ = template("void %s(%s) {\n%s\n%s}\n",
                 $2, $4, $7, $8);
-              tf($2); tf($4); tf($7); tf($8);
-          }
-       ;  
+            tf($2); tf($4); tf($7); tf($8);
+        }
+    ;
 
 /* function-decl. */
 func_decl:
-        KW_FUNCTION IDENT 
-          KW_LPAR type_only_arguments KW_RPAR 
-          KW_COLON cdata_with_type KW_SEMICOLON 
-          decls func_body KW_SEMICOLON
+    KW_FUNCTION IDENT
+        KW_LPAR type_only_arguments KW_RPAR
+        KW_COLON cdata_with_type KW_SEMICOLON
+        decls func_body KW_SEMICOLON
         {
-          $$ = template("%s %s(%s) {%s result;\n%s\n%s\nreturn result;}\n", 
-            $7, $2, $4, $7, $9, $10);
+            $$ = template("%s %s(%s) {%s result;\n%s\n%s\nreturn result;}\n",
+                $7, $2, $4, $7, $9, $10);
             tf($2); tf($4); tf($7); tf($9); tf($10);
         }
-        ;
+    ;
 
 func_body: 
-    KW_BEGIN func_stmts KW_END {$$ = template("{%s}", $2); tf($2);}
-    | KW_BEGIN error KW_END
-        {$$ = "";}
+    KW_BEGIN func_stmts KW_END  {$$ = template("{%s}", $2); tf($2);}
+    | KW_BEGIN error KW_END     {$$ = "";}
     ;
 
 /* functions have their own statement decl. as
    they need to accommodate the 'result' statement */
 func_stmts:
-          {$$ = "";}
-          | func_statement_list  { $$ = $1; }
-          
-          ;
+    {$$ = "";}
+    | func_statement_list  { $$ = $1; }
+    ;
 
 func_statement_list: 
-        func_stmt                     
-			  | func_statement_list KW_SEMICOLON func_stmt  
-			    { $$ = template("%s%s", $1, $3); tf($1); tf($3); }
-			  ; 
+    func_stmt
+    | func_statement_list KW_SEMICOLON func_stmt
+        { $$ = template("%s%s", $1, $3); tf($1); tf($3); }
+    ;
     
 func_stmt:
       common_stmt       {$$ = $1;}
@@ -462,16 +460,15 @@ ident_with_bracket:
 
 /* main body statements */      
 statements:
-          {$$ = "";}
-          | statement_list  { $$ = $1; }
-          
-          ;
+    {$$ = "";}
+    | statement_list  { $$ = $1; }
+    ;
 
 statement_list: 
-        statement         
-			  | statement_list KW_SEMICOLON statement  
-			    { $$ = template("%s%s", $1, $3); tf($1); tf($3); }
-			  ; 
+    statement
+    | statement_list KW_SEMICOLON statement
+        { $$ = template("%s%s", $1, $3); tf($1); tf($3); }
+    ;
 
 common_stmt:
           assign_stmt     {$$ = $1;}
@@ -602,9 +599,9 @@ func_ret_stmt:
         
 /* return value types */               
 ret_val:
-        func_exp_join  
-          {$$ = $1;}
-        ;
+    func_exp_join
+        {$$ = $1;}
+    ;
 
          
 /* function calls */
@@ -646,21 +643,21 @@ type_only_arguments:
 
 /* inside proc. and main arguments */
 arguments :									
-      /* no arguments */    { $$ = ""; }
-	 	  | arglist 						{ $$ = $1; }
-	 	  ;
+    /* no arguments */  { $$ = ""; }
+    | arglist           { $$ = $1; }
+    ;
 
 arglist:
-       exp_join							{ $$ = $1; }
-       | arglist KW_COMMA exp_join 			
+    exp_join { $$ = $1; }
+    | arglist KW_COMMA exp_join
         {$$ = template("%s,%s", $1, $3); tf($1); tf($3);}
-       ;
+    ;
 
 /* inside function arguments */
 func_arguments :									
-      /* no arguments */    { $$ = ""; }
-	 	  | func_arglist  			{ $$ = $1; }
-	 	  ;
+    /* no arguments */  { $$ = ""; }
+    | func_arglist      { $$ = $1; }
+    ;
 
 func_arglist:
        func_exp_join
@@ -672,9 +669,9 @@ func_arglist:
 
 /* basic expressions join with potential cast identifiers */
 exp_join:
-          ident_with_bracket  {$$ = $1;}
-          | basic_exp         {$$ = $1;}
-          ;
+    ident_with_bracket  {$$ = $1;}
+    | basic_exp         {$$ = $1;}
+    ;
           
 /* function flavor to take in account the 'result' keyword */
 func_exp_join:
