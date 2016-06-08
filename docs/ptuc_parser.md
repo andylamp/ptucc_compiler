@@ -73,22 +73,24 @@ shown in the previous section we can use inside rules `tagA` as a string while `
 
 # Bison types
 
-`bison` `types` are used to indicate that a `bison` state can have a return value, much like `tokens`. The same rules apply
-but these have to be declared using a different directive like so:
+`bison` `types` are used to indicate that a `bison` state can have a return value, much like `tokens`. The same rules
+apply but these have to be declared using a different directive like so:
 
 ```c
 %type <tagA> TYPE_NAME_A
 %type <tagB> TYPE_NAME_B
 ```
 
-Again as with `tokens`, you can also group for convenience `types` that have the same `tag` inside the same declaration like so:
+Again as with `tokens`, you can also group for convenience `types` that have the same `tag` inside the same declaration
+like so:
 
 ```c
 %type <tagA> TYPE_NAME_A
 %type <tagC> TYPE_NAME_B TYPE_NAME_C TYPE_NAME_F
 ```
 
-The `tags` are again defined inside the union as is the case with the `tags` used by `tokens` -- basically the same rules apply here as well.
+The `tags` are again defined inside the union as is the case with the `tags` used by `tokens` -- basically the same rules
+apply here as well.
 
 # Constructing grammar rules
 
@@ -219,20 +221,127 @@ Lists are a special composition rule type which is very interesting due to it pr
 recursive matches. In order to understand this a bit better let's look at the definition of one such rule:
 
 ```c
-/* identifiers */
+/* identifiers (left recursion) */
 ident_list:
     IDENT
     | ident_list KW_COMMA IDENT
     ;
 ```
 
+Usually lists have two (2) cases, one that is responsible for the recursion and one handles the singular (terminal) case
+of that rule. The recursion happens in the above example when we match the *second* case. That particular case allows us
+to match the terminal symbols `KW_COMMA` and `IDENT` as well as ourselves -- so that essentially means that we can
+`reduce` the terminal symbols and *re-enter* the same rule until we can match the first case which ends the recursion.
+
+It has to be noted that there two types of recursion, *left* and *right*; the above rule we just showed is an example of
+a *left recursion*. The same identical rule using *right recursion* would the be following:
+
+```c
+/* identifiers (right recursion) */
+ident_list:
+    IDENT
+    | IDENT KW_COMMA ident_list
+    ;
+```
+
+Although you have the option to use *right* instead of *left* recursion, due to how `bison` works internally you should
+avoid that and opt to use only *left* recursion. That's because in the case of a *right* recursion in order to parse
+that rule `bison` has to `shift` onto its stack all of the `tokens` that might be a potential match in the current
+context for that rule without even applying it once (thus performing a `reduce` operation, which "eats up" the stack).
+
+# Grammar conflicts
+
+When parsing tokens `bison` tries to match them into one of the given grammar rules that can be potentially applied
+in the current context. To do that `bison` supports two (2) basic operations, `shift` and `reduce`; `shift` means that
+the `tokens` are *shifted* to the stack while `reduce` means that `tokens` are *consumed* from the stack. Depending on
+how you have created your rules you might have introduced *ambiguities* in the grammar; this means that `bison` in
+*at least one* occasion does not know *precisely* which *singular* rule to apply. This creates a *conflict*, which
+`bison` (thankfully) reports at compile time as a warning. There can be two (2) different types of conflicts:
+
+* shift/reduce
+* reduce/reduce
+
+## Shift/Reduce conflicts
+
+This type of conflict happens when `bison` does not know which operation to perform, `shift` or `reduce`. An example
+of such rule would the following:
+
+```c
+/* identifiers */
+ident_list:
+    IDENT
+    | IDENT KW_COMMA
+    | ident_list KW_COMMA IDENT
+    ;
+```
+
+The introduction of this second case, creates an *ambiguity* in our grammar which in turn creates a *shift/reduce*
+conflict. In order to better understand that we have to explain a bit more how `bison` parses the `tokens` and
+selects to either `shift` or `reduce`. As `bison` parses the `tokens` even if it matches a rule it does not immediately
+`reduce`, even if a rule is matched; what instead happens is that `bison` always has stored one `token` ahead to a
+special variable called the **lookahead** `token`. The value of the lookahead token is stored in `yychar` and (if any)
+its semantic value and its location in `yylval` and `yylloc` respectively.
+
+Now in our case when we parse the `IDENT` token and we have in our *lookahead* `token` the `KW_COMMA`, we can either
+use the second case and `reduce` or use the third rule and `shift` as we can match the first two parts of the third case.
+This would happen if we matched `IDENT` as `ident_list`, `reduced` it using the first case and `shifted` the result,
+then matched the `KW_COMMA` and we would expect an `IDENT` in order to complete the rule.
+
+## Reduce/Reduce conflicts
+
+This type of conflict is more serious than the previous one as `bison` knows that is has to perform a `reduce`
+operation but has *more than one* way of doing so -- this very bad and indicates a serious problem in the grammar. An
+example of that rule would be the following:
+
+```c
+
+/* identifiers */
+ident_list:
+    %empty
+    | IDENT
+    | ident_list KW_COMMA IDENT
+    ;
+
+/* data-types using no cast */
+cdata:
+      %empty
+      | KW_BOOLEAN
+      | KW_CHAR
+      | KW_INTEGER
+      | KW_REAL
+      ;
+
+/* combine them */
+combs:
+    %empty
+    | combs ident_list;
+    | combs cdata;
+```
+
+Now  in the above segment we have a serious issue; let's assume that we have to parse an empty input, if we try to
+match it using the above rules we can see that is can be reduced in multiple ways; thus `bison` does not know reliably
+which  rule to use in order to `reduce`, hence the conflicts. This can be resolved by altering the grammar itself or
+using precedence rules, which will be discussed later on.
+
+## Expected conflicts
+
+In some grammar it is normal to have a small amount of *shift/reduce* conflicts (but no *reduce/reduce* conflicts); in
+order to indicate that this is normal and suppress the warnings generated by `bison` upon compilation one can use the
+`%expect` directive. This is placed inside the `bison` declaration section and takes an argument of the precise amount of
+*shift/reduce* conflicts that we are expecting, like so:
+
+```c
+%expect n
+```
+
+If the number of *shift/reduce* conflicts is not equal to `n` (less or more) or we have a *reduce/reduce conflicts an
+error is thrown and compilation is stopped.
 
 # Precedence rules
 
-Precedence is a really important aspect of your grammar; that is... if you want to do something
-meaningful with it you are bound to be affected by it. But how is precedence demonstrated? Let's first show an example,
-support that we have to add three numbers `a`, `b` and `c` (`a` + `b` + `c`). Now also suppose that we have the
-following grammar rule for addition:
+Precedence is a really important aspect of your grammar; that is... if you want to do something meaningful with it you
+are bound to be affected by it. Let's first show an example; suppose that  we have to add three numbers `a`, `b` and
+`c` (`a` + `b` + `c`). Now also suppose that we have the following grammar rule for addition:
 
  ```c
  add_op:
@@ -297,14 +406,14 @@ if that's encountered (e.g. a + b + c would throw an error).
 * precedence (`%precedence`): Indicates just precedence **not** associativity.
 
 In the previous cases, precedence did not actually affect the result but there are some cases that
-precedence *does* affect the result; one such example is if we had the following:
+precedence *does* affect the result; one such example is if we had the following expression:
 
 ```c
 a * b + c
 ```
 
 Here we don't have precedence for sequential operations using the same operator but different ones; again if no
-precedence is set for the multiplication (`*`) and addition operator (`+`), `bison` would not be certain which
+precedence is set for the multiplication (`*`) and addition (`+`) operators, `bison` would not be certain which
 operation to perform first, `a * b` or `b + c` and a shift/reduce conflict would again occur. Of course we
 can easily see that doing `(a * b) + c` is **not** the same as `a * (b + c)`. This is solved by determining the
 precedence of the *operator itself against the others*. This actually took me quite a while to figure out as I did not
@@ -346,10 +455,11 @@ As a final example, the complete precedence rule list for `ptuc` follows.
 %precedence KW_ELSE
 ```
 
-Again, sharp readers will see notice in the above code something that I have yet to explain; and again...
-they'd be right! As I left that for last. Notice that there is no `token` defined for `IF_THEN` or
-`TYPE_CASE_PREC`, so it turns out that one can declare precedence for arbitrary symbols and use the
-term `%prec` to enforce that precedence into a rule, like so:
+## Non-operator precedence
+
+Again, sharp readers will see notice in the above code something that I have yet to explain; and  they'd be right! As I
+left that for last. Notice that there is no `token` defined for `IF_THEN` or `TYPE_CASE_PREC`, so it turns out that one
+can declare precedence for arbitrary symbols and use the term `%prec` to enforce that precedence into a rule, like so:
 
  ```c
  add_op:
@@ -497,8 +607,10 @@ Valid *discarded symbols* are the symbols that fall into *at least* one of the f
 
 * stacked symbols popped during the first phase of error recovery
 * incoming terminals during the second phase of error recovery
-* the current lookahead and the entire stack (except the current right-hand side symbols) in the case the parser is *fail-fast*
-* the current lookahead and the entire stack (including the current right-hand side symbols) when the `C++` parser catches an exception in `parse`
+* the current lookahead and the entire stack (except the current right-hand side symbols) in the case the parser is
+*fail-fast*
+* the current lookahead and the entire stack (including the current right-hand side symbols) when the `C++` parser
+catches an exception in `parse`
 * the start symbol when the parser succeeds
 
 Additionally, `bison` only calls the destructors for *user-defined* symbols. If you call a destructor for a
@@ -578,15 +690,17 @@ program_decl:
     ;
 ```
 
-This does a couple of things, if we detect an error then we will immediately switch to the second (and error handling)
-case where we will **ignore** everything encountered up the next semicolon (`;`). This switch happens by discarding both
-the value of the current tags in context (if any) as we as all the tokens on the `bison` stack until we reach a point
-where the rule which contains the `error` token is acceptable, in our case that happens when we encounter the *next*
- semicolon (`;`). Of course for all of the discarded symbols the appropriate destructors will be run as well, if any.
+The above addition does a couple of things, firstly if we detect an error then we will immediately switch to the
+second (and error handling) case and secondly we will **ignore** and **discard** everything encountered up the
+*next* semicolon (`;`). This switch happens by discarding both the value of the current semantic tags in current
+context (if any) as we as all the tokens on the `bison` stack until we reach a point where the rule which contains
+the `error` token is acceptable -- in our case this happens when we encounter the *next* semicolon (`;`). Of course
+for all of the discarded symbols the appropriate destructors will be run as well, if any.
 
- Additionally, after encountering an error its likely are that this will create much more consecutive errors; to
+Additionally, after encountering an error it's likely that this fact will then create much more consecutive errors; to
  avoid this console spam `bison` *suppresses* error messages until *three* (3) consecutive `tokens` have been parsed
- and shifted. If you don't like this behavior by default you can put the `yyerrok` inside the `error` rule like so:
+ and shifted successfully. If you don't like (or want) this behavior by default you can put the `yyerrok`
+ inside the `error` rule like so:
 
 ```c
 program_decl:
@@ -616,7 +730,7 @@ what they do -- a *cheat-sheet* if you'd like to call it that.
 * `%nonassoc`: used to indicate that the operators are *not-associated* and using it like so would indicate a syntax error.
 * `%start`: used to indicate our starting rule (or you could call it state as well).
 * `%expect`: used to indicate that we *expect* our grammar to have a specific number of *shift/reduce* conflicts
-(**not** *reduce/reduce** conflicts). If the number of errors differ, then a compilation error is
+(**not** *reduce/reduce* conflicts). If the number of errors differ, then a compilation error is
 thrown (e.g. `%expect n` if *shift/reduce* count is not *exactly* `n`, we fail to compile).
 * `%pure_parser`: used to indicate that we *want* our parser to be a reentrant; this means that it will not use global
 variables to communicate with `flex`. This option is useful when we want to create a thread-safe parser.
@@ -638,7 +752,7 @@ the most common would be: `%define parse.error verbose` that enables more verbos
 
 # Epilogue
 
-I had a blast creating this project and writing this guide. Due to my recent dabbling I don't get to play much with
+I had a blast creating this project and writing this guide. Due to my recent dabblings I don't get to play much with
 these tools so it was a nice escape. Hopefully you learned something through all of this ;).
 
 [1]: ptuc_spec.md
