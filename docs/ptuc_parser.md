@@ -735,8 +735,380 @@ recovering states.
 
 # Creating `ptuc` grammar
 
-In this section I will briefly describe `ptuc` grammar rules and how are structured while also touching in
-greater details some implementation related topics that I find are quite interesting.
+In this section I will briefly describe `ptuc` grammar rules and how they are structured while also touching in greater
+detail some implementation related topics that I find to be quite intriguing. As a general rule you should first
+understand the grammar you want to create rules for and that's really important (`ptuc` spec. ref. [here][1]); as if you
+"get-it" then translating these rules into a working grammar should be quite easy. This section will follow the natural
+structure of the grammar, defining small primitives and using them to build our grammar.
+
+## Primitives
+
+Primitives are the building blocks that we will use in order to create more complex rules; in this category I included
+ the following language elements:
+
+* strings
+* scalar/boolean values
+* data-types
+* identifiers
+* expressions
+* statements
+
+The first three are simple rules to implement as well as understand, things start to get a little bit tricky when
+dealing with statements and expressions. Most rules *return* a value, and in this language we only have one type,
+`<crepr>` that's of type `char *`; so all of the return values are assumed to be of that type. Also please be aware that
+we *only* copy values when we *have to do so*, otherwise we just *pass* the pointer for the already allocated value to
+the return value (`$$`). If in doubt, look at the complete source ([ptucc_parser.y][3]).
+
+### Strings
+
+Strings are using a very simple rule that just groups the terminal symbols for the two types of strings `ptuc` supports.
+The only catch is that when we have a *single* quoted string we change the *single* quotes to *double* using
+`string_ptuc2c` function defined in `cgen.c`.
+
+```c
+/* string values */
+string_vals:
+      STR_LIT   {$$ = $1;}
+      | STRING	{$$ = string_ptuc2c($1);}
+      ;
+```
+
+### Scalar/Boolean values
+
+Scalar values rule is again very simple and similar to strings:
+
+```c
+scalar_vals:
+      POSINT    {$$ = $1;}
+      | REAL    {$$ = $1;}
+      ;
+```
+
+Boolean values are the same as well, but here we don't just pass the accompanied value as the output but rather we
+use `strdup` to copy the string `"true"` or `"false"` to the output.
+
+```c
+bool_vals:
+      KW_BOOL_TRUE    {$$ = strdup("true");}
+      | KW_BOOL_FALSE {$$ = strdup("false");}
+      ;
+```
+
+Then both of these are joined into a complex rule that can describe both in one go:
+
+```c
+/* scalar/bool values */
+lit_vals:
+      scalar_vals {$$ = $1;}
+      | bool_vals {$$ = $1;}
+      ;
+```
+
+### Data-types
+
+The data-types here are just a collection of the available ones that `ptuc` has **without** the custom types.
+
+```c
+/* data-types using no cast */
+cdata:
+      KW_BOOLEAN {$$ = "bool";}
+      | KW_CHAR {$$ = "char";}
+      | KW_INTEGER {$$ = "int";}
+      | KW_REAL {$$ = "double";}
+      ;
+```
+
+Here we compose a data-type rule that has all of the default ones and can also accept any custom ones that are treated as
+an identifier (`IDENT`).
+
+```c
+/* data-types that might use cast to type */
+cdata_with_type:
+      cdata     {$$ = strdup($1);}
+      | IDENT   {$$ = $1;}
+      ;
+```
+
+Notice here that in the case of `cdata` we *have* to copy the string due to the fact that they were statically allocated
+inside the `cadata` rule.
+
+#### Type cast
+
+In `ptuc` we support type casting, that is we can cast one type into another; this is done in the same way as
+it's done in `C`. Additionally we also support infinite nesting, so we allow `((((type)))) var_to_cast` as well as
+`(type) var_to_cast`, they are treated as equivalents. To allow this we use *recursion*, the first case recursively
+strips away the surplus parenthesis pairs up to the point we reach one pair and one type. The `template` function here
+is used to return a formatted string and performs a dynamic allocation, thus we have to free up the resources using
+`tf`.
+
+```c
+/* expression that we use to allow casting with inf. nested pars */
+type_cast:
+      KW_LPAR type_cast KW_RPAR
+        {$$ = template("(%s)", $2); tf($2);}
+      | KW_LPAR cdata_with_type KW_RPAR
+        {$$ = template("(%s)", $2); tf($2);}
+      ;
+```
+
+### Identifiers
+
+Previously we talked about identifiers, so here is the rule that implements them, which basically joins the terminal
+case along with a second case that allows us to recursively parse more than one identifiers separated by commas (`,`):
+
+```c
+/* identifiers */
+ident_list:
+        IDENT {$$ = $1;}
+        | ident_list KW_COMMA IDENT
+          {$$ = template("%s, %s", $1, $3); tf($1); tf($3);}
+        ;
+```
+
+Another important identifier rule is the one we have to use for arrays as they are followed by a number of brackets
+equal to the number of their dimension, so a 3-dimensional array like: `array[2][3][4]` is followed by three
+bracket pairs; in our rule this is represented in the `brackets_list` rule that is also shown below.
+
+```c
+/* this is to allow ident[index] scheme */
+ident_with_bracket:
+        IDENT   {$$ = $1;}
+        | IDENT brackets_list
+            {$$ = template("%s%s", $1, $2); tf($1); tf($2);}
+        ;
+/*
+  handle variable array size, eat up brackets in a
+  padding fashion e.g. [] -> [][] -> [][][] ...
+*/
+brackets_list:
+      KW_LBRA POSINT KW_RBRA
+        {$$ = template("[%s]", $2); tf($2);}
+      | brackets_list KW_LBRA POSINT KW_RBRA
+        {$$ = template("%s[%s]", $1, $3); tf($1); tf($3);}
+      ;
+
+```
+
+### Expressions
+
+Inside expression we group the three types of expressions we have one-side expressions such as `!ident`, or `+1` and
+two-side expressions such as `a + b`, `b % c` etc. We intuitively composed them into a rule that follows:
+
+```c
+expression:
+    one_side_exp    {$$ = $1;}
+    | two_side_exp  {$$ = $1;}
+    ;
+```
+
+Additionally we consider as expressions also strings, literal values, function calls and so on... so another rule was
+created to accommodate that:
+
+```c
+basic_exp:
+          type_cast exp_join %prec TYPE_CAST_PREC
+            {$$ = template("%s %s", $1, $2); tf($1); tf($2); }
+          | KW_LPAR basic_exp KW_RPAR {$$ = template("(%s)", $2); tf($2);}
+          | proc_call
+            {$$ = $1;}
+          | lit_vals
+            {$$ = $1;}
+          | string_vals
+            {$$ = $1;}
+          | expression
+            {$$ = $1;}
+          ;
+```
+
+The important part is that we use *precedence* here to indicate that the first case, where we match and `reduce` in
+case we have a type-cast and an expression using the `%prec` directive we enforce the precedence and associativity
+of `TYPE_CAST_PREC` overriding the the `bison` inferred precedence; this eliminates a potential ambiguity in our
+grammar as if we did not enforce that precedence rule `bison` would not be certain whether to `shift` using the first
+case or `reduce` using the second case.
+
+The final step is to describe `exp_join` state, which is the following:
+
+```c
+exp_join:
+    ident_with_bracket  {$$ = $1;}
+    | basic_exp         {$$ = $1;}
+    ;
+```
+
+This is a clever way to pack the identifiers that are followed with an array without causing any ambiguities
+in our grammar.
+
+### Statements
+
+Statements form the block of our logic, they contain most useful building blocks, that are really not all that
+interesting in their implementation, just a straight up translation of the rules in the spec. into tokens, then all
+of them are composed into the complex rule that follows:
+
+```c
+statement:
+    common_stmt     {$$ = $1;}
+    | proc_call     {$$ = template("%s;\n", $1); tf($1);}
+    | while_stmt    {$$ = $1;}
+    | for_stmt      {$$ = $1;}
+    | if_stmt       {$$ = $1;}
+    | label_stmt    {$$ = $1;}
+    | ret_stmt      {$$ = $1;}
+    | body          {$$ = $1;}
+    ;
+```
+
+Then we can define the following two rules, which allows us to parse a lot of statements using recursion while also
+handling empty input correctly.
+
+```c
+statements:
+    {$$ = "";}
+    | statement_list  { $$ = $1; }
+    ;
+
+statement_list:
+    statement
+    | statement_list KW_SEMICOLON statement
+        { $$ = template("%s%s", $1, $3); tf($1); tf($3); }
+    ;
+```
+
+## Command enclosure (body)
+
+Our command enclosure (body) is comprised out of zero or many statements, these include assignments, function/procedure calls
+and so on. The rule is simple, as the statements are expanded into their respective rules. The `body` rule is the following:
+
+```c
+body:
+    KW_BEGIN statements KW_END
+        {$$ = template("{%s}", $2); tf($2);}
+    | KW_BEGIN error KW_END
+        {$$ = "";}
+    ;
+```
+
+This is handy as we can use it in all places where we want to have multiple statements, like inside `if`, `while`
+statements, function/procedure definitions, modules and so on. There is a catch though, in `functions` we have to use a
+different body rule as they require to support the `result` keyword, this happens by just using the same structure
+albeit using the special statements rule we introduced for functions above. The resulting rule follows.
+
+```c
+func_body:
+    KW_BEGIN func_stmts KW_END
+        {$$ = template("{%s}", $2); tf($2);}
+    | KW_BEGIN error KW_END
+        {$$ = "";}
+    ;
+```
+
+## Modules
+
+Modules (as we previously said in our lexer [here][4]) are stitched to the input so `bison` has no idea that we are
+reading from another file; thus we just see a `token` sequence. From our spec. inside our modules we *only* allow
+declarations of variables, functions and so on thus inside `incl_mod` we make sure that happens, if not an error is
+thrown. The 'incl_mods' rule allows us to parse multiple modules while also handling empty input correctly.
+
+```c
+incl_mods:
+      {$$ = "";}
+      | incl_mods incl_mod KW_SEMICOLON
+        {$$ = template("%s\n%s", $1, $2); tf($1); tf($2);}
+      ;
+
+incl_mod:
+      KW_MODULE IDENT incl_mods KW_BEGIN decls KW_END KW_DOT
+      {
+        $$ = template("// included module %s\n%s\n%s", $2, $3, $5);
+        tf($2); tf($3); tf($5);
+      }
+      | error KW_SEMICOLON {$$ = "";};
+      ;
+```
+
+## Program header
+
+This is a very simple rule, it just checks if the program header is aligned with the rules in our spec., if not the
+second case is matched and an error is reported.
+
+```c
+program_decl:
+    KW_PROGRAM IDENT KW_SEMICOLON  	{ $$ = $2; }
+    | error KW_SEMICOLON {$$ = "";}
+    ;
+```
+
+## Program declarations
+
+This rule allows us to declare variables, functions/procedures and custom data-types; we can declare none or many of
+each and at any order -- gotta love recursive rules :).
+
+```c
+/* flexible decls allow in any order variable, type, function decls */
+decls:
+      /* in case of no decls */
+      {$$ = "";}
+      | decls error KW_SEMICOLON {$$ = $1;}
+      | decls type_decl
+        {$$ = template("%s\n%s", $1, $2); tf($1); tf($2);}
+      | decls var_decl
+        {$$ = template("%s\n%s", $1, $2); tf($1); tf($2);}
+      | decls func_decl
+        {$$ = template("%s\n%s", $1, $2); tf($1); tf($2);}
+      | decls proc_decl
+        {$$ = template("%s\n%s", $1, $2); tf($1); tf($2);}
+      ;
+```
+
+### Variables
+
+```c
+/* variables */
+var_decl:
+        KW_VAR var_decl_list
+          { $$ = template("%s\n", $2); tf($2); }
+        ;
+
+var_decl_list:
+        var_decl_single {$$ = $1;}
+        | var_decl_list var_decl_single
+          {$$ = template("%s\n%s", $1, $2); tf($1); tf($2);}
+        ;
+```
+
+### Procedures
+
+Procedures are like our main `body`, albeit they take arguments.
+
+```c
+/* proc. decl. */
+proc_decl:
+    KW_PROCEDURE IDENT
+        KW_LPAR type_only_arguments KW_RPAR KW_SEMICOLON
+        decls body KW_SEMICOLON
+        {
+            $$ = template("void %s(%s) {\n%s\n%s}\n",
+                $2, $4, $7, $8);
+            tf($2); tf($4); tf($7); tf($8);
+        }
+    ;
+```
+
+### Functions
+
+```c
+/* function-decl. */
+func_decl:
+    KW_FUNCTION IDENT
+        KW_LPAR type_only_arguments KW_RPAR
+        KW_COLON cdata_with_type KW_SEMICOLON
+        decls func_body KW_SEMICOLON
+        {
+            $$ = template("%s %s(%s) {%s result;\n%s\n%s\nreturn result;}\n",
+                $7, $2, $4, $7, $9, $10);
+            tf($2); tf($4); tf($7); tf($9); tf($10);
+        }
+    ;
+```
 
 # Special `bison` commands
 
@@ -778,3 +1150,5 @@ these tools so it was a nice escape. Hopefully you learned something through all
 
 [1]: ptuc_spec.md
 [2]: http://www.gnu.org/software/bison/manual/html_node/_0025define-Summary.html
+[3]: ../ptucc_parser.y
+[4]: ptuc_lexer.md
