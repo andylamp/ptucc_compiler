@@ -285,7 +285,9 @@ its semantic value and its location in `yylval` and `yylloc` respectively.
 Now in our case when we parse the `IDENT` token and we have in our *lookahead* `token` the `KW_COMMA`, we can either
 use the second case and `reduce` or use the third rule and `shift` as we can match the first two parts of the third case.
 This would happen if we matched `IDENT` as `ident_list`, `reduced` it using the first case and `shifted` the result,
-then matched the `KW_COMMA` and we would expect an `IDENT` in order to complete the rule.
+then matched the `KW_COMMA` and we would expect an `IDENT` in order to complete the rule. Normally *shift/reduce*
+conflicts should be resolved and this can be done by either specifying precedence (will be discussed later) or
+altering your grammar.
 
 ## Reduce/Reduce conflicts
 
@@ -320,8 +322,8 @@ combs:
 
 Now  in the above segment we have a serious issue; let's assume that we have to parse an empty input, if we try to
 match it using the above rules we can see that is can be reduced in multiple ways; thus `bison` does not know reliably
-which  rule to use in order to `reduce`, hence the conflicts. This can be resolved by altering the grammar itself or
-using precedence rules, which will be discussed later on.
+which  rule to use in order to `reduce`, hence the conflicts. This can be resolved as with *shift/reduce* conflicts by
+altering the grammar itself or using precedence rules, which will be discussed later on.
 
 ## Expected conflicts
 
@@ -467,9 +469,28 @@ can declare precedence for arbitrary symbols and use the term `%prec` to enforce
     ;
  ```
 
-So using the `add_op` rule we can modify it as follows to *enforce* that particular rule to have the
-precedence (and associativity) of `IF_THEN` or any other symbol. We will explain why we need `IF_THEN` and
-`TYPE_CASE_PREC` when dealing with `ptuc` grammar.
+So using the `add_op` rule we can modify it as follows to *enforce* that particular rule to have the precedence (and
+associativity) of `IF_THEN` or any other symbol. These can be used to also enforce precedence in order to resolve
+conflicts in our grammar, by using our previous example that created a *shift/reduce* conflict:
+
+```c
+/* in decl. section */
+%precedence lower
+%precedence higher
+
+/* identifiers */
+ident_list:
+    IDENT
+    | IDENT KW_COMMA                %prec higher
+    | ident_list KW_COMMA IDENT     %prec lower
+    ;
+```
+
+Since `higher` is declared lower than `lower` it has **higher** precedence, thus by using `%prec` directive we enforce
+that precedence in our rules, solving the previous ambiguity that was present in our grammar by always favoring the
+second case. This technique can also be used for resolving *reduce/reduce* conflicts as well. The reasoning behind the
+precedence specification for non-token symbols `IF_THEN` and `TYPE_CASE_PREC` will be explained when we tackle our
+`ptuc` grammar implementation.
 
 # Freeing symbols
 
