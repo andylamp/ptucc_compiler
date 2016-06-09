@@ -1063,6 +1063,28 @@ decls:
 
 ### Variables
 
+Variables are parsed using a recursive rule again, but as with function/procedure arguments that we will see below if we
+have multiple variables chained against one data-type we cannot transparently convert from `ptuc` to `C` thus we created
+two helper functions `ident_to_pointer` and `ident_to_array` which are used to solve this problem. All of these use a
+similar technique and I'll only explain one of them, `ident_to_pointer`. In `ptuc` we have have the following variable
+declaration:
+
+```pascal
+var
+    a: integer;
+    b, c, d: array of char;
+```
+
+Which would translate to `C` as follows:
+
+```c
+int a;
+char *b, *c, *d;
+```
+
+But if we see the rule for parsing the variables, due to the order of expansion the value of the data-type is *not*
+available upon identifier expansion so it cannot be padded. The rule is the following:
+
 ```c
 /* variables */
 var_decl:
@@ -1075,6 +1097,32 @@ var_decl_list:
         | var_decl_list var_decl_single
           {$$ = template("%s\n%s", $1, $2); tf($1); tf($2);}
         ;
+```
+
+Hence the logic behind `ident_to_pointer` is to pad the pointer into each identifier that needs it, like so:
+
+```c
+/* pointerize identifiers */
+char *
+ident_to_pointer(char *s) {
+    if(s == NULL || strcmp(s, "") == 0)
+    {return "";}
+    /* find the number of variables */
+    uint32_t vars = find_counts(s, ',');
+    size_t buf_len = strlen(s)+(4*vars)+1;
+    char *cur_tok = cur_tok = strtok(s, ","),
+            *new_buf = calloc(buf_len, sizeof(char));
+    if(new_buf == NULL)
+    {return NULL;}
+    while(cur_tok != NULL) {
+        strcat(new_buf, " *");
+        strcat(new_buf, cur_tok);
+        cur_tok = strtok(NULL, ",");
+        if(cur_tok != NULL)
+        {strcat(new_buf, ",");}
+    }
+    return new_buf;
+}
 ```
 
 ### Procedures
