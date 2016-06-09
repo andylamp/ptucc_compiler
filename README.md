@@ -2,7 +2,7 @@
 
 # Starting stub of `ptucc`
 
-This is the non-patch starting stub of `ptucc`, refer to the main branch to see the read me for the release version.
+This is the non-patched starting stub of `ptucc`, refer to the main branch to see the read me for the release version.
 
 
 # Requirements
