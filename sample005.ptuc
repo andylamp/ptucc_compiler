@@ -21,8 +21,8 @@ program calculate;
         else begin
             i := 3;
             isPrime := true;
-            while isPrime and i > 0 and (i < n div 2) do begin
-                isPrime := n mod i <> 0;
+            while isPrime and (i <= n div 2) do begin
+                isPrime := n mod i > 0;
                 i := i+2
             end;
             result := isPrime

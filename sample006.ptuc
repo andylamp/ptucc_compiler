@@ -27,8 +27,7 @@ var
 	fac, i: integer;
 begin
 	fac := 1; 
-	for i:=n downto 1 do 
-	  fac:=i*fac;
+	for i:=n downto 1 do fac:=i*fac;
 	result := fac;
 	return
 end;
@@ -36,7 +35,9 @@ end;
 procedure eval(prompt: string; f: intfunc; val: integer);
 begin
 	writeString(prompt); 
-	writeString('('); writeInteger(val); writeString(')=');
+	writeString('('); 
+	writeInteger(val); 
+	writeString(')=');
 	writeInteger(f(val));
 	writeString('\n')
 end;

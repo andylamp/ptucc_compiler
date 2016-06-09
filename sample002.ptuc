@@ -3,7 +3,7 @@
 *)
 program test;
 begin
-	writeString("Hello world\"\n");
+	writeString("Hello world\n");
 	writeString('Hello world ');
 	writeInteger(3);
 	writeString(" times.\n");

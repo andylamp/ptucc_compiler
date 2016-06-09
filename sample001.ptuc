@@ -2,13 +2,9 @@
 	Sample program 
 *)
 
-use nice;
-use nicer;
-
 program foo;
 
 begin
-  writeInteger(10.001e10);
 	writeString('Hello world');
 	writeString('\n')
 end.

@@ -1,39 +1,32 @@
+ifndef DEBUG
 # Default: compile for debug
+DEBUG=1
+endif
+#PROFILE=1
 
-DEBUG ?= 1
-DEBUG_GEN_FILES ?= 0
-PROFILE ?= 0
-
-CC = gcc -g
+CC = gcc
 
 BASICFLAGS= -std=c11
+
 DEBUGFLAGS=  -g 
-OPTFLAGS= -finline -march=native -O3 -DNDEBUG
+OPTFLAGS= -g -finline -march=native -O3 -DNDEBUG
 
 ifeq ($(PROFILE),1)
-  PROFFLAGS= -pg 
-  PLFLAGS= -pg
-  BISONFLAGS=
+PROFFLAGS= -g -pg 
+PLFLAGS= -g -pg
 else
-  PROFFLAGS= 
-  PLFLAGS=
-  BISONFLAGS=-d --report=state --report-file=./bstate.debug
+PROFFLAGS= 
+PLFLAGS=
 endif
 
 INCLUDE_PATH=-I. 
 
 CFLAGS= -Wall -D_GNU_SOURCE $(BASICFLAGS)
 
-ifneq ($(DEBUG_GEN_FILES), 1)
-SAMPLE_CFLAGS= -D_GNU_SOURCE $(BASICFLAGS)
-else
-SAMPLE_CFLAGS= $(CFLAGS)
-endif
-
 ifeq ($(DEBUG),1)
-  CFLAGS+=  $(DEBUGFLAGS) $(PROFFLAGS) $(INCLUDE_PATH)
+CFLAGS+=  $(DEBUGFLAGS) $(PROFFLAGS) $(INCLUDE_PATH)
 else
-  CFLAGS+=  $(OPTFLAGS) $(PROFFLAGS) $(INCLUDE_PATH)
+CFLAGS+=  $(OPTFLAGS) $(PROFFLAGS) $(INCLUDE_PATH)
 endif
 
 LDFLAGS= $(PLFLAGS) $(BASICFLAGS)
@@ -47,7 +40,7 @@ BISON=bison
 
 
 C_PROG= ptucc ptucc_scan sample001
-C_SOURCES= ptucc.c ptucc_scan.c cgen.c hashtable.c config.c
+C_SOURCES= ptucc.c ptucc_scan.c cgen.c
 C_GEN=ptucc_lex.c ptucc_parser.tab.h ptucc_parser.tab.c sample001.c
 
 C_SRC= $(C_SOURCES) $(C_GEN)
@@ -56,29 +49,25 @@ C_OBJECTS=$(C_SRC:.c=.o)
 
 .PHONY: all tests release clean distclean
 
-all: ptucc_lex.c ptucc
+all: ptucc_scan ptucc
 
-ptucc: ptucc.o ptucc_lex.o ptucc_parser.tab.o cgen.o hashtable.o config.o
+ptucc: ptucc.o ptucc_lex.o ptucc_parser.tab.o cgen.o
 	$(CC) $(CFLAGS) -o $@ $+ $(LIBS)
 
-ptucc_scan: ptucc_scan.o ptucc_lex.o ptucc_parser.tab.o cgen.o hashtable.o config.o
+ptucc_scan: ptucc_scan.o ptucc_lex.o ptucc_parser.tab.o cgen.o
 	$(CC) $(CFLAGS) -o $@ $+ $(LIBS)
 
 ptucc_lex.c: ptucc_lex.l ptucc_parser.tab.h
 	$(FLEX) -o ptucc_lex.c ptucc_lex.l
 
 ptucc_parser.tab.c ptucc_parser.tab.h: ptucc_parser.y
-	$(BISON) $(BISONFLAGS) ptucc_parser.y
+	$(BISON) -d ptucc_parser.y
 
-%: ptucc_scan ptucc %.ptuc
-	./ptucc < $@.ptuc > $@.c
-	$(CC) $(SAMPLE_CFLAGS) -o $@ $@.c
-	./$@
- 
-test: ptucc_scan ptucc
+test: ptucc
 	./ptucc < sample001.ptuc > sample001.c
-	$(CC) $(SAMPLE_CFLAGS) -o sample001 sample001.c
+	gcc -Wall -std=c11 -o sample001 sample001.c
 	./sample001
+
 
 #-----------------------------------------------------
 # Build control
@@ -92,25 +81,28 @@ realclean:
 	-rm $(C_PROG) $(C_OBJECTS) $(C_GEN) .depend *.o sample001.c sample001
 	-rm .depend
 	-touch .depend
+
+depend: $(C_SOURCES)
+	$(CC) $(CFLAGS) -MM $(C_SOURCES) > .depend
 	
-clean: realclean
+clean: realclean depend
 
 include .depend
 
 # Create release (courses handout) archive
 
-release: clean-release-files ptucc.tgz
+release: clean-release-files tinyos2.tgz
 
 clean-release-files:
-	-rm ptucc.tgz
+	-rm tinyos2.tgz
 
 TARFILES= cgen.c	cgen.h	Makefile  ptucc.c  ptucc_lex.l	\
-  ptucc_parser.y ptucc_scan.c  ptuclib.h \
-  README.md
+  ptucc_parser.y ptucc_scan.c  ptuclib.h  sample001.ptuc \
+  README.txt
 
 
-ptucc.tgz: $(TARFILES)
+ptuc_example.tgz: $(TARFILES)
 	$(MAKE) distclean
-	tar czvhf ptucc.tgz $(TARFILES)
+	tar czvhf ptuc_example.tgz $(TARFILES)
 
 

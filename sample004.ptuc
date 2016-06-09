@@ -12,7 +12,7 @@ program useless;
 
     (* This is a rather silly function *)
     procedure compute(n: integer; k:integer);
-        var fac, p, j: integer;
+        var j: integer;
 
         function cube(i: integer): integer;
 
@@ -22,9 +22,7 @@ program useless;
         end;
 
     begin
-        fac := 1;
         j := (integer) (N - n) + cube(k);
-        for p:=j downto 1 do fac:=p*fac;
         writeString("Computed (N-n)+k^3 = "); 
         writeInteger(j); nl()
     end;

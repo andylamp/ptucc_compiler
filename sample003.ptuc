@@ -2,11 +2,11 @@
 program print_pi;
 
 @defmacro PI 3.1415927
-@defmacro PI_2 ((PI)/2)
+@defmacro PI_2 (PI/2)
 @defmacro PI2  (PI*2)
 
 begin
 	writeString('PI='); writeReal(PI); writeString('\n');
-	writeString('PI/2='); writeReal((PI_2)); writeString('\n');
+	writeString('PI/2='); writeReal(PI_2); writeString('\n');
 	writeString('2*PI='); writeReal(PI2); writeString('\n')
 end.
