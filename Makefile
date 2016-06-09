@@ -104,9 +104,9 @@ release: clean-release-files ptucc.tgz
 clean-release-files:
 	-rm ptucc.tgz
 
-TARFILES= cgen.c	cgen.h	Makefile  ptucc.c  ptucc_lex.l	\
+TARFILES= cgen.c cgen.h	Makefile ptucc.c ptucc_lex.l	\
   ptucc_parser.y ptucc_scan.c  ptuclib.h \
-  README.md
+  README.md hashtable.c hashtable.h
 
 
 ptucc.tgz: $(TARFILES)
