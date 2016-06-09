@@ -739,7 +739,10 @@ In this section I will briefly describe `ptuc` grammar rules and how they are st
 detail some implementation related topics that I find to be quite intriguing. As a general rule you should first
 understand the grammar you want to create rules for and that's really important (`ptuc` spec. ref. [here][1]); as if you
 "get-it" then translating these rules into a working grammar should be quite easy. This section will follow the natural
-structure of the grammar, defining small primitives and using them to build our grammar.
+structure of the grammar, defining small primitives and using them to build our grammar. Also please be aware that we
+*only* copy values when we *have to do so* (e.g. change the printed format using `template` function), otherwise we just
+*pass* the pointer for the already allocated value to the return value (`$$`). If in doubt, look at the complete source
+([ptucc_parser.y][3]).
 
 ## Primitives
 
@@ -755,9 +758,7 @@ Primitives are the building blocks that we will use in order to create more comp
 
 The first three are simple rules to implement as well as understand, things start to get a little bit tricky when
 dealing with statements and expressions. Most rules *return* a value, and in this language we only have one type,
-`<crepr>` that's of type `char *`; so all of the return values are assumed to be of that type. Also please be aware that
-we *only* copy values when we *have to do so*, otherwise we just *pass* the pointer for the already allocated value to
-the return value (`$$`). If in doubt, look at the complete source ([ptucc_parser.y][3]).
+`<crepr>` that's of type `char *`; so all of the return values are assumed to be of that type.
 
 ### Strings
 
@@ -975,8 +976,9 @@ statement_list:
 
 ## Command enclosure (body)
 
-Our command enclosure (body) is comprised out of zero or many statements, these include assignments, function/procedure calls
-and so on. The rule is simple, as the statements are expanded into their respective rules. The `body` rule is the following:
+Our command enclosure (body) is comprised out of zero or many statements, these include assignments, function/procedure
+calls and so on. The rule is simple, as the statements are expanded into their respective rules. The `body` rule is the
+following:
 
 ```c
 body:
@@ -1077,7 +1079,8 @@ var_decl_list:
 
 ### Procedures
 
-Procedures are like our main `body`, albeit they take arguments.
+Procedures are like our main `body`, albeit they take arguments; we again use the `template` function in order to
+translate `ptuc` syntax to `C` as per our spec.
 
 ```c
 /* proc. decl. */
@@ -1093,7 +1096,75 @@ proc_decl:
     ;
 ```
 
+Interestingly enough, there is a catch here; due to the way arguments are structured in `ptuc` there is not an elegant
+way of performing the conversion using just `bison`'s magic. Let's illustrate this with an example; imagine that we had
+the following `ptuc` procedures:
+
+```pascal
+procedure evalA(f: real; v: integer);
+begin
+    (* proc. body *)
+end
+
+procedure evalB(f, c: real; v, l: integer);
+begin
+    (* proc. body *)
+end
+```
+
+Both are perfectly valid; but `C` requires the data-type of each variable that is part of a function argument to have
+its type as well, so the above functions would translate into `C` like this:
+
+```c
+void evalA(double f, int v) {
+    // proc. body
+}
+
+void evalB(double f, double c, int v, int l) {
+    // proc. body
+}
+```
+
+The following rule correctly and reliably parses the `ptuc` arguments but fails to translate into `C` transparently;
+that's because `ident_list` does not know what the value of `cdata_with_type` is and the time of expansion and inside
+the `type_only_arguments` rule we have the complete parsed strings from both `ident_list` as well as `cdata_with_type`.
+This becomes an issue when we have more than one variable assigned to the same data-type (like in `evalB`), so in order
+to remedy this issue we created `ident_to_data` that does exactly that... combines the identifiers with their type and
+returns the correct `C` equivalent syntax.
+
+```c
+/* type only arguments */
+type_only_arguments:
+    {$$ = "";}
+    | ident_list KW_COLON cdata_with_type
+        {
+          char *s = ident_to_cdata($1, $3);
+          if(s == NULL) {
+            tf($3); yyerror("No memory to pad cdata to ident");
+          } else
+            {$$ = s; tf($1); tf($3);}
+
+        }
+    | type_only_arguments KW_SEMICOLON ident_list KW_COLON cdata_with_type
+        {
+          char *s = ident_to_cdata($3, $5);
+          if(s == NULL) {
+            tf($3); tf($5); yyerror("No memory to pad cdata to ident");
+          } else {
+            $$ = template("%s, %s", $1, s);
+            tf($1); tf($3); tf($5); tf(s);
+          }
+
+        }
+    ;
+```
+
 ### Functions
+
+Functions are like procedures, with one exception -- they have a *return* value; as per our spec. this return requires
+us to have also a special variable inside our function called `result` which we assign our resulting value to. In the end
+we can either result the result value or one of our own. The `func_body` rule is altered to accommodate for that fact as
+it uses a modified statements rule.
 
 ```c
 /* function-decl. */
@@ -1140,7 +1211,8 @@ each `token` name is located as `yytname[i]` where `i` is the number `bison` has
   * `YYNRULES`: Returns the number of grammar rules.
   * `YYNSTATES`: Returns the number of (generated) parser states.
 * `%define`: allows us to tweak some parser parameters by defining some configuration properties (more [here][2]);
-the most common would be: `%define parse.error verbose` that enables more verbose syntax error information output.
+the most common of which would be: `%define parse.error verbose` that enables more verbose syntax error information
+output.
 
 
 # Epilogue
