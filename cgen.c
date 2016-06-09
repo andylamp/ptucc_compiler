@@ -14,7 +14,8 @@ void ssopen(sstream* S)
 char* ssvalue(sstream* S)
 {
 	fflush(S->stream);
-	return S->buffer;
+	return "";
+	//return S->buffer;
 }
 
 void ssclose(sstream* S)
@@ -35,7 +36,7 @@ char* template(const char* pat, ...)
 
 	char* ret = ssvalue(&S);
 	ssclose(&S);
-	return ret;
+	return S.buffer;
 }
 
 /* Helper functions */

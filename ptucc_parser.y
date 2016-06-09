@@ -39,6 +39,7 @@ program:  program_decl body  '.'
 		puts(c_prologue);
 		printf("/* program  %s */ \n\n", $1);
 		printf("int main() %s \n", $2);
+		free($1); free($2);
 	}
 };
 
@@ -50,7 +51,7 @@ program_decl:
 
 body: 
     KW_BEGIN statements KW_END   	
-      {$$ = template("{\n %s \n }\n", $2);}
+      {$$ = template("{\n %s \n }\n", $2); free($2);}
     ;
 
 statements: 				        	
@@ -63,21 +64,21 @@ statements:
         ;
 
 statement_list: 
-        statement 
-          {$$ = $1;}                    
+        statement   
+          {$$ = $1;}                  
 			  | statement_list ';' statement  
-			    {$$ = template("%s%s", $1, $3);}
+			    {$$ = template("%s%s", $1, $3); free($1); free($3);}
 			  ; 
 
 
 statement: 
         proc_call  						
-          {$$ = template("%s;\n", $1);}
+          {$$ = template("%s;\n", $1); free($1);}
         ;
 
 proc_call: 
         IDENT '(' arguments ')' 			
-          {$$ = template("%s(%s)", $1, $3);}
+          {$$ = template("%s(%s)", $1, $3); free($1); free($3);}
         ;
 
 arguments:									
@@ -90,7 +91,7 @@ arglist:
        expression							
           {$$ = $1;}
        | arglist ',' expression 			
-          {$$ = template("%s,%s", $1, $3);}
+          {$$ = template("%s,%s", $1, $3); free($1); free($3);}
        ;
 
 expression: 

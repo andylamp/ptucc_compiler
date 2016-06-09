@@ -23,8 +23,8 @@ char* get_macro(char* name);
 
 %}
 
-ID [a-zA-Z_][0-9a-zA-Z_]*
-DIGIT  [0-9]
+ID      [a-zA-Z_][0-9a-zA-Z_]*
+DIGIT   [0-9]
 NUMBER  {DIGIT}{DIGIT}*
 DECIMAL ("."{NUMBER})|({NUMBER}("."{NUMBER}?)?)
 REAL    {DECIMAL}([eE][+-]?{NUMBER})?
@@ -89,9 +89,9 @@ end						return KW_END;
 
 [ \r\t]					/* skip whitespace */
 \n 						++line_num;
-<<EOF>> 				return EOF;
+<<EOF>> 				{yylex_destroy(); return EOF;}
 
-.        { yyerror("lexical error: unrecognized literal '%s'\n", yytext); }
+.        {yyerror("lexical error: unrecognized literal '%s'\n", yytext);}
 
 
 %%
