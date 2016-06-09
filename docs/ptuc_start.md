@@ -20,7 +20,7 @@ You grab the starting stub by using two different routes; which are the followin
     git checkout -b starting_stub https://github.com/andylamp/ptucc_compiler
 ```
 
-2) Alternatively, if you are not familiar or don't want to use `git` you can download it from here. It
+2) Alternatively, if you are not familiar or don't want to use `git` you can download it from [here][3]. It
 has to be noted that going this route involves another step; extracting the archive contents, this can
 be done by navigating to the folder you downloaded the archive using your console and typing in
 the terminal the following: `$ tar xzvf ptuc_starting_stub.tgz`.
@@ -33,7 +33,7 @@ You can do that too... although I don't recommend that.
 ```
     git checkout -b starting_stub_patched https://github.com/andylamp/ptucc_compiler
 ```
-2) Grab the archive here.
+2) Grab the archive [here][4].
 
 # Building starting archive
 
@@ -486,3 +486,5 @@ can move on to build our lexer using `flex` [here][2].
 
 [1]: intro.md
 [2]: ptuc_lexer.md
+[3]: https://github.com/andylamp/ptucc_compiler/releases/tag/0.1
+[4]: https://github.com/andylamp/ptucc_compiler/releases/tag/0.1p
