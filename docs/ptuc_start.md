@@ -16,12 +16,23 @@ Now that we got everything out of the way, `here be dragons`<sup>&trade;</sup>!
 You grab the starting stub by using two different routes; which are the following:
 
 1) Check out of the 'starting_stub' branch by typing in a console:
-    `git checkout -b starting_stub this_repo_link`
+
+    `git checkout -b starting_stub https://github.com/andylamp/ptucc_compiler`
 
 2) Alternatively, if you are not familiar or don't want to use `git` you can download it from here. It
 has to be noted that going this route involves another step; extracting the archive contents, this can
 be done by navigating to the folder you downloaded the archive using your console and typing in
 the terminal the following: `$ tar xzvf ptuc_starting_stub.tgz`.
+
+## Grab the patched version and skip this.
+
+You can do that too... although I don't recommend that.
+
+1) Check out of the 'starting_stub' branch by typing in a console:
+
+    `git checkout -b starting_stub_patched https://github.com/andylamp/ptucc_compiler`
+
+2) Grab the archive here.
 
 # Building starting archive
 
