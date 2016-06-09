@@ -49,8 +49,8 @@ if `DEBUG` flag is set to `0` at compile time.
 # Compiling a `.ptuc` file
 
 The next step is to compile a `.ptuc` file; if you want to create your own files you will probably
-have to read the `ptuc` language definition which is located [here][5]. Alternatively, if you want to just
-execute the test or the example files you have two options, which are:
+have to read the `ptuc` language definition. Alternatively, if you want to just execute the test or the example files
+you have two options, which are:
 
 ## Make the test
 
