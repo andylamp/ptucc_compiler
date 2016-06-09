@@ -97,7 +97,7 @@ clean: realclean
 
 include .depend
 
-# Create release (courses handout) archive
+# Create release archive
 
 release: clean-release-files ptucc.tgz
 
