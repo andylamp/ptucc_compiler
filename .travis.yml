@@ -4,8 +4,8 @@ install:
   - sudo apt-get update -qq
   - sudo apt-get install build-essential flex
   - wget http://ftp.debian.org/debian/pool/main/b/bison/bison_3.0.4.dfsg-1_amd64.deb
-  - chmod +x bison_3.0.4.dfsg-1_amd64.deb
-  - sudo apt-get install -f bison_3.0.4.dfsg-1_amd64.deb
+  - chmod +x ./bison_3.0.4.dfsg-1_amd64.deb
+  - sudo apt-get install -f ./bison_3.0.4.dfsg-1_amd64.deb
 
 script:
   touch .depend && make all && make test
