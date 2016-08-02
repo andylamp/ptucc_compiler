@@ -15,7 +15,7 @@ Now that we got everything out of the way, `here be dragons`<sup>&trade;</sup>!
 
 You grab the starting stub by using two different routes; which are the following:
 
-1) Check out of the 'starting_stub' branch by typing in a console:
+1) Check out of the 'starting_stub' branch by typing in an open terminal console:
 ```
     git checkout -b starting_stub https://github.com/andylamp/ptucc_compiler
 ```
