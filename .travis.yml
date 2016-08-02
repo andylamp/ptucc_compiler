@@ -5,4 +5,4 @@ install:
   - sudo apt-get install build-essential flex bison
 
 script:
-  make && make test
+  touch .depend && make all && make test
