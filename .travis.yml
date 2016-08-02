@@ -8,5 +8,14 @@ install:
   - wget http://ftp.debian.org/debian/pool/main/b/bison/bison_3.0.4.dfsg-1_amd64.deb
   - sudo dpkg -i bison_3.0.4.dfsg-1_amd64.deb
 
+addons:
+  apt:
+    sources:
+    - ubuntu-toolchain-r-test
+    packages:
+    - gcc-5
+    - g++-5
+
 script:
-  touch .depend && make all && make test
+  - sudo unlink /usr/bin/gcc && sudo ln -s /usr/bin/gcc-5 /usr/bin/gcc
+  - touch .depend && make all && make test
