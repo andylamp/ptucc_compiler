@@ -1,3 +1,5 @@
+![build logo](https://travis-ci.org/andylamp/ptucc_compiler.svg?branch=master)
+
 # ptuc Compiler read me.
 
 This is a brief ReadMe of what this is, what it offers and how to grab, 
