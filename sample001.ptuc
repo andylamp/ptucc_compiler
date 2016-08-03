@@ -2,7 +2,6 @@
 	Sample program 
 *)
 
-use nice;
 use nicer;
 
 program foo;

@@ -3,7 +3,6 @@ begin
 type
    intfunc = function(n: integer) : integer;
    string = array of char;
-var f: integer;
 procedure eval(prompt: string; f: intfunc; val: integer);
 begin
 	writeString(prompt);
