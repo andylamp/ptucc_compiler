@@ -235,7 +235,7 @@ use         {pwrap("USE"); BEGIN(incl_module);}
             }
 
   /* arithmetic operators */
-"+"	        {pwrap("OP_PLUS"); return KW_OP_PLUS;}
+"+"         {pwrap("OP_PLUS"); return KW_OP_PLUS;}
 "-"         {pwrap("OP_MINUS"); return KW_OP_MINUS;}
 "*"         {pwrap("OP_MUL"); return KW_OP_MUL;}
 "/"         {pwrap("OP_DIV"); return KW_OP_DIV;}
@@ -267,23 +267,23 @@ use         {pwrap("USE"); BEGIN(incl_module);}
 ":"         {pwrap("DEL_COLON"); return KW_COLON;}
 
   /* handle single-line comments */
-"//"                    {BEGIN(sl_comment);}
-<sl_comment>[^\n]      /* eat up anything up to newline */
+"//"                {BEGIN(sl_comment);}
+<sl_comment>[^\n]   /* eat up anything up to newline */
 <sl_comment>\n      {
                         increment_line_count(); // increment line
                         BEGIN(INITIAL);         // go back
                     }
                       
   /* handle multi-line comments */
-"(*"					{BEGIN(comment);}
+"(*"	                {BEGIN(comment);}
 <comment>[^*\n]*        /* eat anything that's not a '*' */
 <comment>"*"+[^*)\n]*   /* eat up '*'s not followed by ')'s */
 <comment>\n             {increment_line_count();}
 <comment>"*"+")"        {BEGIN(INITIAL);}
 
 
-[ \r\t]				/* skip whitespace */
-\n 						{increment_line_count();}//++line_num;
+[ \r\t]       /* skip whitespace */
+\n            {increment_line_count();}//++line_num;
 <<EOF>>         {
                     /* pop one of the stacked buffers, if any */
                     if(!pop_delete_buffer()) {
