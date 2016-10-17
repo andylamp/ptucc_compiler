@@ -56,7 +56,7 @@ and `bison` (`.y`) files; it's also a paid solution.
 # Compiling `ptucc`
 
 After you ensure you are on a supported platform, have
-installed the required dependencies and successfully closed this
+installed the required dependencies and successfully cloned this
 repo is to open a terminal inside the folder you just created
 and type:
 
