@@ -1,6 +1,6 @@
 # Pascal-TUC language specification
 
-This is the `official`<sup>(duh)</sup> specification for the language that is recognized, tokenized
+This is the `official`<sup>(duh)</sup> specification for the language that is recognized, tokenized,
 and parsed by `ptucc`; it stems, as its name suggests, from `Pascal` and `TUC`. As you might imagine
 by `Pascal` we mean the programming language but I'll leave the origins of `TUC` inside  a mystery
 of strawberry flavored cloud for the informed reader to smell and poke in order to find its
