@@ -3,7 +3,7 @@
 # ptuc Compiler read me.
 
 This is a brief ReadMe of what this is, what it offers and how to grab, 
-navigate and run this software.
+navigate, and run this software.
 
 # What this is
 
