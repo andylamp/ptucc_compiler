@@ -61,7 +61,7 @@ repo is to open a terminal inside the folder you just created
 and type:
 
 ```
-$ make all
+$ touch .depend; make all
 ```
 
 The default mode compiles the project in `Debug` mode without using 
