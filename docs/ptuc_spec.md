@@ -13,7 +13,7 @@ if you think you found any discrepancies do let me know...but since this is a pl
 # Program definition
 
 Each *valid* `ptuc` program will be comprised out of a number of `lexical` units that are laid out
-based on the `syntax` rules defined in this specification. Both `lexical` units and `synxax` rules
+based on the `syntax` rules defined in this specification. Both `lexical` units and `syntax` rules
 will be thoroughly described in the following sections.
 
 # Lexical units
