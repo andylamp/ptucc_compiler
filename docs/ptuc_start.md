@@ -23,7 +23,11 @@ You grab the starting stub by using two different routes; which are the followin
 2) Alternatively, if you are not familiar or don't want to use `git` you can download it from [here][3]. It
 has to be noted that going this route involves another step; extracting the archive contents, this can
 be done by navigating to the folder you downloaded the archive using your console and typing in
-the terminal the following: `$ tar xzvf ptuc_starting_stub.tgz`.
+the terminal the following: 
+
+```
+$ tar xzvf ptuc_starting_stub.tgz
+```
 
 ## Grab the patched version and skip this.
 
@@ -33,7 +37,7 @@ You can do that too... although I don't recommend that.
 ```
     git checkout -b starting_stub_patched https://github.com/andylamp/ptucc_compiler
 ```
-2) Grab the archive [here][4].
+2) Grab the archive [here][4] and extract it using the command mentioned above.
 
 # Building starting archive
 
@@ -96,7 +100,7 @@ Hello world
 
 Congratulations, you've just compiled and executed your first `ptuc` program!
 
-Warming! If compilation fails and the error looks like this:
+Warning! If compilation fails and the error looks like this:
 
 ```
 $ make test
