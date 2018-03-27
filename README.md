@@ -2,11 +2,6 @@
 
 # Introduction
 
-This is a brief ReadMe of what this is, what it offers and how to grab, 
-navigate, and run this software.
-
-# What this is
-
 This is a compiler that converts an imaginary language `ptuc` (that bears quite 
 a few similarities with `Pascal`) into `C`; `ptuc` full spec can be found [here][5]. 
 This is done by using `flex` and `bison`.
