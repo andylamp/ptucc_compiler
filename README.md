@@ -1,6 +1,6 @@
 ![build logo](https://travis-ci.org/andylamp/ptucc_compiler.svg?branch=master)
 
-# ptuc Compiler read me.
+# Introduction
 
 This is a brief ReadMe of what this is, what it offers and how to grab, 
 navigate, and run this software.
@@ -76,7 +76,7 @@ own files you will probably have to read the `ptuc` language definition
 which is located [here][5]. Alternatively, if you want to just execute 
 the test or the example files you have two options, which are:
 
-## Make the test
+## Run the tests
 
 This is a fancy wrapper to just compile and run the `sample001.ptuc` file, 
 hence all you have to do is to type in your console:
@@ -85,7 +85,7 @@ hence all you have to do is to type in your console:
 $ make test
 ```
 
-## Make the samples
+## Run the samples
 
 The other way of running the provided sample files is even more easy; 
 you just have to type `make` and the filename like so:
