@@ -148,7 +148,7 @@ do this here.
 ## Pass it through `valgrind` (optional?)
 
 Valgrind is one of my favorite tools, it works really well on almost any Linux/BSD distribution
-but recent Mac OS releases have problems. Valgrind let's you profile and find errors in your program
+but recent Mac OS releases have problems. Valgrind lets you profile and find errors in your program
 while also giving clues on their origin -- this is **super** handy. I certainly would've missed
 quite a few memory leaks if it wasn't for `valgrind`. Mastering `valgrind` is a huge task and
 probably a subject to write a whole book about it so I'll only cover the very basics here.
